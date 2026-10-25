@@ -5,6 +5,7 @@ import com.lauua.lauuacheats.core.Module;
 import com.lauua.lauuacheats.hud.HudRegistry;
 import com.lauua.lauuacheats.modules.CombatModules;
 import com.lauua.lauuacheats.modules.WorldModules;
+import com.lauua.lauuacheats.modules.Extras;
 import com.lauua.lauuacheats.rotation.RotationManager;
 import com.lauua.lauuacheats.scan.*;
 import com.lauua.lauuacheats.settings.Setting.*;
@@ -45,6 +46,7 @@ public final class LauuaClient implements ClientModInitializer {
         });
         CombatModules.register(modules,rotations,macros);
         WorldModules.register(modules,scanner,hud,()->world);
+        Extras.register(modules,hud,rotations);
         try { profiles.load("default"); } catch (Exception e) { System.err.println("[Lauua] profile load failed: " + e); }
         hud.register(modules);
         keys.bind(GLFW.GLFW_KEY_RIGHT_SHIFT,()-> Minecraft.getInstance().gui.setScreen(new ClickGui(modules,hud)));
@@ -59,7 +61,7 @@ public final class LauuaClient implements ClientModInitializer {
     }
     private void tick(Minecraft mc) {
         if(lastLevel!=mc.level) {
-            lastLevel=mc.level; rotations.clear(); macros.abort(); scanner.reset(); modules.worldChanged(); bus.post(new EventBus.WorldChanged());
+            lastLevel=mc.level; Extras.resetSession(); rotations.clear(); macros.abort(); scanner.reset(); modules.worldChanged(); bus.post(new EventBus.WorldChanged());
         }
         if(mc.level!=null) {
             String server=mc.getCurrentServer()==null?"singleplayer":mc.getCurrentServer().ip;

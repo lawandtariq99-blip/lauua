@@ -4,7 +4,7 @@ Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`
 
 **Build:** Install JDK 25, put `java` on PATH / set `JAVA_HOME`, then run `./gradlew build` from this directory. Find the distributable in `build/libs/`; install it alongside Fabric API in a 26.2 Fabric client. Only the client entrypoint is registered; never install on a dedicated server.
 
-**Important build status:** The supplied coding sandbox had **no Java executable** and could not reach `services.gradle.org` or `maven.fabricmc.net`. `./gradlew build` was attempted after each stage and immediately stopped with `JAVA_HOME is not set`. Consequently **this code has not been compiled or play-tested**. It is a scaffold/prototype, *not* a verified working cheat client. Source was parsed for Java syntax only. Run the build on a networked JDK 25 machine and fix API/mixin errors before using it.
+**Build status:** This sandbox has no Java executable and cannot reach the Gradle/Fabric Maven hosts; its local `./gradlew build` checks stop with `JAVA_HOME is not set`. A [Java 25 GitHub Actions build](https://github.com/lawandtariq99-blip/lauua/actions/runs/40191661711) passed for the stage-0–7 source. Later additions must also pass CI. **Compilation is not a runtime test**: verify the mixins and gameplay in a test world before use.
 
 **Mappings choice:** Yarn has no 26.2 branch (its newest published branch at creation was 1.21.11). The official 26.2 example uses Mojang's official mappings by default; this project follows it instead of inventing an incompatible Yarn version. This is a deliberate departure from the request.
 
@@ -42,6 +42,11 @@ Tiers are **descriptive labels**, not a guarantee of server compatibility or saf
 | StorageESP | B | HUD count of scanned storage; no world-space boxes |
 | CoordLogger | A | Manual chat/file/list logging |
 | WaypointExport | A | CSV, JSON, tentative Xaero format export |
+| SessionTimer | A | Elapsed session HUD |
+| FPS HUD | A | Client FPS HUD, no ping/TPS |
+| TargetHUD | B | Hovered mob health HUD |
+| TriggerBot | D | Attack hovered mob at cooldown |
+| AutoTool | B | Select fastest hotbar tool while breaking |
 
 The ClickGUI has category collapsing, live search, module toggles, tier labels and basic setting toggles/stepping. Non-numeric complex settings (lists, colors, keybinds and strings) currently need JSON editing and a profile reload. HUD registry renders coordinates, reach and active modules, and has configurable background/opacity/shadow fields; drag the blue `::` handles in the ClickGUI to reposition, or use the chat HUD move command.
 
@@ -63,4 +68,4 @@ An exact palette/packed-storage comparator is provided for use with a trusted ba
 
 ### Not implemented
 
-Stage 8 was explicitly conditional on stages 0–7 building clean; the build cannot run in this sandbox, so none of the long stage-8 wishlist was attempted. Stage 7's exact vanilla-worldgen palette comparison and world-space ESP, stage 2's complex settings editors, stage 3's verified sign/anvil behavior, and several advanced combat features are likewise incomplete. Do not mistake the module table for a claim that all requested functions are complete.
+Stage 8 started only after the Java 25 CI build passed. Five small stage-8 modules were added; the rest of its long wishlist was not attempted. Stage 7's exact vanilla-worldgen palette comparison and world-space ESP, stage 2's complex settings editors, stage 3's verified sign/anvil behavior, and several advanced combat features are likewise incomplete. Do not mistake the module table for a claim that all requested functions are complete.
