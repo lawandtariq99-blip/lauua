@@ -8,6 +8,10 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.core.BlockPos;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.io.IOException;
 import org.lwjgl.glfw.GLFW;
 
 /** A virtual-display integration test: world join, basefinding, ESP index and GUI opening. */
@@ -42,7 +46,11 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                     throw new AssertionError("GUI did not open");
             });
             context.waitTicks(2); // causes HUD and ESP extraction, catching runtime mixin/render errors
-            context.takeScreenshot("lauua-explorer-26_2");
+            Path screenshot=context.takeScreenshot("lauua-explorer-26_2");
+            try {
+                Files.createDirectories(Path.of("build/libs"));
+                Files.copy(screenshot,Path.of("build/libs/lauua-gui-preview.png"),StandardCopyOption.REPLACE_EXISTING);
+            } catch(IOException e) { throw new AssertionError("Unable to save tested GUI screenshot: " + screenshot,e); }
             int[] scrollAt=new int[2];
             context.runOnClient(mc -> {
                 int gw=mc.getWindow().getGuiScaledWidth(),gh=mc.getWindow().getGuiScaledHeight();
