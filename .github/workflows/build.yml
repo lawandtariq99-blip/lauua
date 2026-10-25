@@ -78,6 +78,12 @@ jobs:
           else
             echo "::warning title=GUI screenshot missing::No screenshot saved by client gametest"
           fi
+          settings=$(find . -type f -name 'lauua-storage-settings.png' -print -quit)
+          if [ -n "$settings" ]; then
+            if [ "$settings" != './build/libs/lauua-storage-settings.png' ]; then cp "$settings" build/libs/lauua-storage-settings.png; fi
+          else
+            echo "::warning title=Settings screenshot missing::No settings screenshot saved by client gametest"
+          fi
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:

@@ -34,7 +34,7 @@ public final class ChunkScanner {
     private Iterator<Map.Entry<BlockPos,BlockEntity>> blockEntities=Collections.emptyIterator();
     private String worldKey="";
     private int section, index, sweepIndex, sweepX=Integer.MIN_VALUE, sweepZ=Integer.MIN_VALUE;
-    private int containers, spawners, utility, artificial;
+    private int containers, spawners, utility, artificial, oreMarkers, artificialMarkers, portalMarkers;
     private double customBoost;
     private final List<Highlight> found = new ArrayList<>();
     private final Set<Long> foundPositions = new HashSet<>();
@@ -112,7 +112,7 @@ public final class ChunkScanner {
             current=queue.pollFirst();
             if(current==null) { if(tick%10==0) rebuildVisible(mc); return; }
             queued.remove(key(current.getPos().x(),current.getPos().z()));
-            section=index=containers=spawners=utility=artificial=0; customBoost=0;
+            section=index=containers=spawners=utility=artificial=oreMarkers=artificialMarkers=portalMarkers=0; customBoost=0;
             found.clear(); foundPositions.clear();
             // Block entities reveal storage/spawners without scanning every block in a section.
             // Keep the iterator only while this chunk is current; abort if packets mutate it.
@@ -143,7 +143,7 @@ public final class ChunkScanner {
                 else if(isUtility(state)) { utility++; mark(pos,Kind.UTILITY); boost(state); }
                 else if(state.is(Blocks.NETHER_PORTAL) || state.is(Blocks.END_PORTAL_FRAME)) { artificial++; mark(pos,Kind.PORTAL); }
                 else if(isArtificial(state)) { artificial++; mark(pos,Kind.ARTIFICIAL); boost(state); }
-                else if(isOre(state) && found.size()<MAX_PER_CHUNK-24) mark(pos,Kind.ORE);
+                else if(isOre(state)) mark(pos,Kind.ORE);
             }
             remaining--;
             if(index==4096) { index=0; section++; }
@@ -169,7 +169,13 @@ public final class ChunkScanner {
     private void mark(BlockPos pos,Kind kind) { mark(pos,kind,StorageType.NONE); }
     private void mark(BlockPos pos,Kind kind,StorageType storageType) {
         foundPositions.add(pos.asLong());
-        if(found.size()<MAX_PER_CHUNK) found.add(new Highlight(pos,kind,storageType));
+        // Reserve slots for rare ores and genuine storage: a cobblestone wall must not
+        // consume all 96 markers and hide a diamond vein or chest deeper in the chunk.
+        if(found.size()>=MAX_PER_CHUNK) return;
+        if(kind==Kind.ARTIFICIAL && artificialMarkers++>=24) return;
+        if(kind==Kind.ORE && oreMarkers++>=24) return;
+        if(kind==Kind.PORTAL && portalMarkers++>=16) return;
+        found.add(new Highlight(pos,kind,storageType));
     }
     private void boost(BlockState state) {
         // Avoid allocating registry names for the common stone/dirt/air path.

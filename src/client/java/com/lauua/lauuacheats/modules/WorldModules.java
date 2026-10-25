@@ -4,6 +4,10 @@ import com.lauua.lauuacheats.core.Module;
 import com.lauua.lauuacheats.core.ModuleManager;
 import com.lauua.lauuacheats.hud.HudRegistry;
 import com.lauua.lauuacheats.scan.ChunkScanner;
+import com.lauua.lauuacheats.scan.CoordLogger;
+import com.lauua.lauuacheats.render.WorldEsp;
+import net.minecraft.core.BlockPos;
+import java.io.IOException;
 import com.lauua.lauuacheats.settings.Setting.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -13,8 +17,8 @@ import java.util.*;
 public final class WorldModules {
     public enum EspStyle { FILL, OUTLINE, BOTH }
     private WorldModules() { }
-    public static void register(ModuleManager manager,ChunkScanner scanner,HudRegistry hud,java.util.function.Supplier<String> world) {
-        manager.register(new Module("NewChunks","Heuristic leads; no unprovable 'fresh' claims",Module.Category.WORLD,-1,false,Module.Tier.C,"Remote seed required for exact worldgen comparison") {});
+    public static void register(ModuleManager manager,ChunkScanner scanner,HudRegistry hud,CoordLogger logger,java.util.function.Supplier<String> world) {
+        // Do not expose a toggle that falsely claims it can identify newly generated chunks.
         manager.register(new Module("ClusterFinder","Rank storage + utility clusters",Module.Category.WORLD,-1,true,Module.Tier.B,"Enabled by default; not proof of a base") {
             final IntSlider budget=add(new IntSlider("Blocks per tick",2048,256,8192));
             final IntSlider range=add(new IntSlider("ESP range",96,16,192));
@@ -49,8 +53,26 @@ public final class WorldModules {
         });
         manager.register(new Module("PortalESP","Mark loaded portal blocks",Module.Category.RENDER,-1,false,Module.Tier.B,"Nether portals and End portal frames") {});
         manager.register(new Module("UtilityESP","Crafting & utility block markers",Module.Category.RENDER,-1,false,Module.Tier.B,"Loaded workstations only") {});
-        manager.register(new Module("CoordLogger","Manual coordinate journal",Module.Category.WORLD,-1,false,Module.Tier.A,"Insert or .lauua waypoint") {});
-        manager.register(new Module("WaypointExport","CSV/JSON/Xaero export",Module.Category.WORLD,-1,false,Module.Tier.A,"Use .lauua export") {});
+        manager.register(new Module("CoordLogger","Journal your route automatically",Module.Category.WORLD,-1,false,Module.Tier.B,"Logs only after both time and distance thresholds; .lauua export for CSV/JSON/Xaero") {
+            final IntSlider distance=add(new IntSlider("Minimum distance",128,16,1024));
+            final IntSlider interval=add(new IntSlider("Interval seconds",60,5,600));
+            BlockPos previous;
+            long lastLogged;
+            @Override protected void onEnable() { previous=null; lastLogged=System.currentTimeMillis(); }
+            @Override public void worldChanged() { previous=null; lastLogged=System.currentTimeMillis(); }
+            @Override public void tick() {
+                Minecraft mc=Minecraft.getInstance();
+                if(mc.player==null || mc.level==null) return;
+                BlockPos position=mc.player.blockPosition();
+                if(previous==null) { previous=position; return; }
+                long now=System.currentTimeMillis();
+                if(now-lastLogged<interval.get()*1000L || previous.distSqr(position)<(long)distance.get()*distance.get()) return;
+                try {
+                    logger.log(mc,world.get(),"Route");
+                    previous=position; lastLogged=now;
+                } catch(IOException e) { System.err.println("[Lauua] Auto waypoint failed: "+e); setEnabled(false); }
+            }
+        });
         hud.put("World Leads",5,47,()-> {
             var s=scanner.stats(world.get());
             return scanning(manager)?"SCAN " + s.indexed()+" chunks | " + s.containers()+" storage | " + s.spawners()+" spawners | " + s.strongest()+" top":"";
@@ -91,7 +113,8 @@ public final class WorldModules {
                 case PORTAL -> 0xFFAD85F6;
             };
             if(mark.kind()==ChunkScanner.Kind.SPAWNER && !modules.find("SpawnerESP").map(Module::enabled).orElse(false)) continue;
-            if(mark.kind()==ChunkScanner.Kind.STORAGE && !modules.find("StorageESP").map(Module::enabled).orElse(false)) continue;
+            if(mark.kind()==ChunkScanner.Kind.STORAGE && ( !modules.find("StorageESP").map(Module::enabled).orElse(false)
+                || !WorldEsp.storageEnabled(modules.find("StorageESP").orElseThrow(),mark.storageType()))) continue;
             if(mark.kind()==ChunkScanner.Kind.ORE && !modules.find("OreESP").map(Module::enabled).orElse(false)) continue;
             if(mark.kind()==ChunkScanner.Kind.PORTAL && !modules.find("PortalESP").map(Module::enabled).orElse(false)) continue;
             if(mark.kind()==ChunkScanner.Kind.UTILITY && !modules.find("UtilityESP").map(Module::enabled).orElse(false)

@@ -52,7 +52,7 @@ public final class LauuaClient implements ClientModInitializer {
             @Override protected void onDisable() { rotations.vanillaMode=false; }
         });
         CombatModules.register(modules,rotations,macros);
-        WorldModules.register(modules,scanner,hud,()->world);
+        WorldModules.register(modules,scanner,hud,logger,()->world);
         new WorldEsp(scanner,modules).register();
         ClientChunkEvents.CHUNK_LOAD.register(scanner::loaded);
         ClientChunkEvents.CHUNK_UNLOAD.register(scanner::unloaded);

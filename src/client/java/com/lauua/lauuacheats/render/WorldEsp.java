@@ -33,7 +33,7 @@ public final class WorldEsp {
             case SHULKER, ENDER_CHEST, MACHINE, NONE -> other;
         };
     }
-    private static boolean storageEnabled(Module m,ChunkScanner.StorageType type) {
+    public static boolean storageEnabled(Module m,ChunkScanner.StorageType type) {
         return switch(type) {
             case CHEST, TRAPPED_CHEST -> flag(m,"Chests");
             case BARREL -> flag(m,"Barrels");
