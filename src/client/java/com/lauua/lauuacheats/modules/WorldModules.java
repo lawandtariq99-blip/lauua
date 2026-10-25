@@ -21,10 +21,13 @@ public final class WorldModules {
             final DoubleSlider storageWeight=add(new DoubleSlider("Storage weight",1.5,0,10));
             final DoubleSlider utilityWeight=add(new DoubleSlider("Crafting weight",3.0,0,12));
             final DoubleSlider obsidianWeight=add(new DoubleSlider("Obsidian weight",0.8,0,6));
-            @Override public void tick() { scanner.blocksPerTick=budget.get(); scanner.highlightRange=range.get();
-                scanner.weight("minecraft:chest",storageWeight.get());
-                scanner.weight("minecraft:crafting_table",utilityWeight.get());
-                scanner.weight("minecraft:obsidian",obsidianWeight.get()); }
+            double oldStorage=Double.NaN, oldUtility=Double.NaN, oldObsidian=Double.NaN;
+            @Override public void tick() {
+                scanner.blocksPerTick=budget.get(); scanner.highlightRange=range.get();
+                if(oldStorage!=storageWeight.get()) { scanner.weight("minecraft:chest",storageWeight.get()); oldStorage=storageWeight.get(); }
+                if(oldUtility!=utilityWeight.get()) { scanner.weight("minecraft:crafting_table",utilityWeight.get()); oldUtility=utilityWeight.get(); }
+                if(oldObsidian!=obsidianWeight.get()) { scanner.weight("minecraft:obsidian",obsidianWeight.get()); oldObsidian=obsidianWeight.get(); }
+            }
         });
         manager.register(new Module("SpawnerESP","3D boxes + radar for loaded spawners",Module.Category.WORLD,-1,true,Module.Tier.B,"Enabled by default; natural spawners aren't bases") {});
         manager.register(new Module("StorageESP","3D boxes + radar for loaded storage",Module.Category.WORLD,-1,true,Module.Tier.B,"Enabled by default; villages also contain chests") {});

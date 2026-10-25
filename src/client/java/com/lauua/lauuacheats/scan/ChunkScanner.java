@@ -114,7 +114,7 @@ public final class ChunkScanner {
             for(var entry:current.getBlockEntities().entrySet()) {
                 BlockState state=entry.getValue().getBlockState();
                 if(state.is(Blocks.SPAWNER)) { spawners++; mark(entry.getKey(),Kind.SPAWNER); }
-                else if(isStorage(state)) { containers++; mark(entry.getKey(),Kind.STORAGE); }
+                else if(isStorage(state)) { containers++; mark(entry.getKey(),Kind.STORAGE); customBoost+=weights.getOrDefault("minecraft:chest",1.5)-1.5; }
             }
         }
         int cx=current.getPos().x(), cz=current.getPos().z();
@@ -130,7 +130,7 @@ public final class ChunkScanner {
             if(interesting(state)) {
                 BlockPos pos=new BlockPos((cx<<4)+x,mc.level.getMinY()+(section<<4)+y,(cz<<4)+z);
                 if(state.is(Blocks.SPAWNER)) { if(foundPositions.add(pos.asLong())) { spawners++; mark(pos,Kind.SPAWNER); } }
-                else if(isStorage(state)) { if(foundPositions.add(pos.asLong())) { containers++; mark(pos,Kind.STORAGE); } }
+                else if(isStorage(state)) { if(foundPositions.add(pos.asLong())) { containers++; mark(pos,Kind.STORAGE); customBoost+=weights.getOrDefault("minecraft:chest",1.5)-1.5; } }
                 else if(isUtility(state)) { utility++; mark(pos,Kind.UTILITY); boost(state); }
                 else if(isArtificial(state)) { artificial++; mark(pos,Kind.ARTIFICIAL); boost(state); }
             }
@@ -162,7 +162,8 @@ public final class ChunkScanner {
     private void boost(BlockState state) {
         // Avoid allocating registry names for the common stone/dirt/air path.
         String id=state.getBlock().builtInRegistryHolder().key().identifier().toString();
-        customBoost+=weights.getOrDefault(id,0.0);
+        double baseline=state.is(Blocks.CRAFTING_TABLE)?3.0:state.is(Blocks.OBSIDIAN)?0.8:0.0;
+        customBoost+=weights.getOrDefault(id,baseline)-baseline;
     }
     private void rebuildVisible(Minecraft mc) {
         if(mc.player==null || mc.level==null) { visible=List.of(); return; }

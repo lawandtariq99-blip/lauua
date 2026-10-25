@@ -54,7 +54,7 @@ public final class ClickGui extends Screen {
         addRenderableWidget(search);
         ScreenMouseEvents.afterMouseClick(this).register((screen,event,consumed)-> {
             if(consumed) return true;
-            int[] p=mouse(); onClick(p[0],p[1],event.button()); return true;
+            onClick((int)event.x(),(int)event.y(),event.button()); return true;
         });
         ScreenMouseEvents.afterMouseScroll(this).register((screen,mx,my,horizontal,vertical,consumed)-> {
             if(mx<x+sidebar || mx>x+w-detail) settingsScroll=Math.max(0,settingsScroll-(int)Math.signum(vertical)*2);
@@ -198,6 +198,13 @@ public final class ClickGui extends Screen {
         } else text(g,"Select a module",panelX+13,y+73,MUTED);
         super.extractRenderState(g,mx,my,delta); // Search field is the only vanilla widget.
         for(HudRegistry.Element e:hud.all()) { rect(g,e.x(),e.y(),14,11,0xBB407E86); text(g,"::",e.x()+2,e.y()+1,TEXT); }
+    }
+    /** Test hook for actual client input: coordinates come from the last rendered card layout. */
+    public int[] moduleTogglePoint(String name) {
+        for(Card card:cards) if(card.module().name.equals(name)) {
+            Rect b=card.bounds(); return new int[]{b.x()+b.w()-18,b.y()+17};
+        }
+        throw new IllegalStateException("Module card not visible: " + name);
     }
     private static void progress(GuiGraphicsExtractor g,int x,int y,int w,double ratio) {
         rect(g,x,y,w,3,0xFF314558); rect(g,x,y,Math.max(2,(int)(w*Math.clamp(ratio,0,1))),3,MINT);

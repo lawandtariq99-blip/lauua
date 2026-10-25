@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.core.BlockPos;
+import org.lwjgl.glfw.GLFW;
 
 /** A virtual-display integration test: world join, basefinding, ESP index and GUI opening. */
 public final class ExplorerGameTest implements FabricClientGameTest {
@@ -37,6 +38,20 @@ public final class ExplorerGameTest implements FabricClientGameTest {
             });
             context.waitTicks(2); // causes HUD and ESP extraction, catching runtime mixin/render errors
             context.takeScreenshot("lauua-explorer-26_2");
+            int[] pixel=new int[2];
+            context.runOnClient(mc -> {
+                var gui=(ClickGui)((GuiScreenAccessor)mc.gui).lauuacheats$screen();
+                int[] pt=gui.moduleTogglePoint("SpawnerESP");
+                pixel[0]=pt[0]*mc.getWindow().getScreenWidth()/mc.getWindow().getGuiScaledWidth();
+                pixel[1]=pt[1]*mc.getWindow().getScreenHeight()/mc.getWindow().getGuiScaledHeight();
+            });
+            context.getInput().setCursorPos(pixel[0],pixel[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(2);
+            context.runOnClient(mc -> {
+                if(LauuaClient.INSTANCE.modules().find("SpawnerESP").orElseThrow().enabled())
+                    throw new AssertionError("GUI click failed to toggle SpawnerESP");
+            });
         }
     }
 }
