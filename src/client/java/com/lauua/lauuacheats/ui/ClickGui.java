@@ -204,7 +204,7 @@ public final class ClickGui extends Screen {
         for(Card card:cards) if(card.module().name.equals(name)) {
             Rect b=card.bounds(); return new int[]{b.x()+b.w()-18,b.y()+17};
         }
-        throw new IllegalStateException("Module card not visible: " + name);
+        throw new IllegalStateException("Module card not visible: " + name + " cards="+cards.stream().map(c->c.module().name).toList() + " size="+width+"x"+height+" panel="+w+"x"+h+" category="+category+" query="+query);
     }
     private static void progress(GuiGraphicsExtractor g,int x,int y,int w,double ratio) {
         rect(g,x,y,w,3,0xFF314558); rect(g,x,y,Math.max(2,(int)(w*Math.clamp(ratio,0,1))),3,MINT);
