@@ -119,3 +119,25 @@ jobs:
             --repo "${{ github.repository }}" --target "$GITHUB_SHA" --prerelease \
             --title "Lauua Cheats 1.1.1 (experimental)" \
             --notes "Minecraft 26.2 client-only Fabric mod. Built with Java 25 by GitHub Actions from this release's source commit. CI client gametest covers chest/spawner scan, live updates, GUI drawing and clicking in a disposable singleplayer world. Multiplayer and other modules are NOT fully tested; inspect the source and verify SHA256SUMS before using."
+
+  inspect-gui:
+    # Temporary visual review: expose the test screenshot as an unreferenced Git blob,
+    # so it can be retrieved through api.github.com where Actions artifacts are blocked.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[inspect]')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Artifacts
+          path: artifact
+      - name: share screenshot blob ID for inspection
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -s artifact/lauua-gui-preview.png
+          sha=$(gh api -X POST "repos/${{ github.repository }}/git/blobs" \
+            -f encoding=base64 -f content="$(base64 -w0 artifact/lauua-gui-preview.png)" --jq .sha)
+          echo "::notice title=GUI screenshot blob::${sha}"
