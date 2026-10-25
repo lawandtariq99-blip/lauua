@@ -146,6 +146,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test -s artifact/lauua-live-esp.png
-          sha=$(gh api -X POST "repos/${{ github.repository }}/git/blobs" \
-            -f encoding=base64 -f content="$(base64 -w0 artifact/lauua-live-esp.png)" --jq .sha)
+          python3 - <<'PYBLOB'
+          import base64,json
+          from pathlib import Path
+          Path('blob.json').write_text(json.dumps({'encoding':'base64','content':base64.b64encode(Path('artifact/lauua-live-esp.png').read_bytes()).decode()}))
+          PYBLOB
+          sha=$(gh api -X POST "repos/${{ github.repository }}/git/blobs" --input blob.json --jq .sha)
           echo "::notice title=World ESP screenshot blob::${sha}"
