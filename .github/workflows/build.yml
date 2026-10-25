@@ -141,3 +141,8 @@ jobs:
           sha=$(gh api -X POST "repos/${{ github.repository }}/git/blobs" \
             -f encoding=base64 -f content="$(base64 -w0 artifact/lauua-gui-preview.png)" --jq .sha)
           echo "::notice title=GUI screenshot blob::${sha}"
+          if [ -s artifact/lauua-storage-settings.png ]; then
+            sha=$(gh api -X POST "repos/${{ github.repository }}/git/blobs" \
+              -f encoding=base64 -f content="$(base64 -w0 artifact/lauua-storage-settings.png)" --jq .sha)
+            echo "::notice title=Settings screenshot blob::${sha}"
+          fi

@@ -2,6 +2,9 @@ package com.lauua.lauuacheats.test;
 
 import com.lauua.lauuacheats.LauuaClient;
 import com.lauua.lauuacheats.scan.ChunkScanner;
+import com.lauua.lauuacheats.core.Module;
+import com.lauua.lauuacheats.settings.Setting;
+import com.lauua.lauuacheats.render.WorldEsp;
 import com.lauua.lauuacheats.text.mixin.GuiScreenAccessor;
 import com.lauua.lauuacheats.ui.ClickGui;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -24,6 +27,8 @@ public final class ExplorerGameTest implements FabricClientGameTest {
             world.getServer().runCommand("/setblock 1 100 0 minecraft:chest");
             world.getServer().runCommand("/setblock 2 100 0 minecraft:crafting_table");
             world.getServer().runCommand("/setblock 3 100 0 minecraft:spawner");
+            world.getServer().runCommand("/setblock 5 100 0 minecraft:diamond_ore");
+            world.getServer().runCommand("/setblock 6 100 0 minecraft:end_portal_frame");
             world.getConnection().waitForChunksRender();
             context.waitTicks(160);
             context.runOnClient(mc -> {
@@ -37,6 +42,14 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                         + " current="+mc.level.getBlockState(new BlockPos(1,100,0)) + " player="+mc.player.blockPosition());
                 if(highlights.stream().noneMatch(h->h.pos().equals(new BlockPos(3,100,0)) && h.kind()==ChunkScanner.Kind.SPAWNER))
                     throw new AssertionError("spawner marker missing: " + highlights);
+                if(highlights.stream().noneMatch(h->h.pos().equals(new BlockPos(1,100,0)) && h.storageType()==ChunkScanner.StorageType.CHEST))
+                    throw new AssertionError("chest storage subtype missing: " + highlights);
+                if(highlights.stream().noneMatch(h->h.pos().equals(new BlockPos(5,100,0)) && h.kind()==ChunkScanner.Kind.ORE))
+                    throw new AssertionError("ore marker missing: " + highlights);
+                if(highlights.stream().noneMatch(h->h.pos().equals(new BlockPos(6,100,0)) && h.kind()==ChunkScanner.Kind.PORTAL))
+                    throw new AssertionError("portal marker missing: " + highlights);
+                if(WorldEsp.storageRgb(ChunkScanner.StorageType.BARREL,1,2,3)!=2)
+                    throw new AssertionError("storage palette routing failed");
                 String key="singleplayer/"+mc.level.dimension().identifier();
                 if(LauuaClient.INSTANCE.scanner().results(key).stream()
                     .noneMatch(r->r.x()==0 && r.z()==0 && r.clusterScore()>=12))
@@ -73,6 +86,22 @@ public final class ExplorerGameTest implements FabricClientGameTest {
             context.runOnClient(mc -> {
                 if(LauuaClient.INSTANCE.modules().find("SpawnerESP").orElseThrow().enabled())
                     throw new AssertionError("GUI click failed to toggle SpawnerESP");
+            });
+            // Exercise actual navigation, card-inspection and a live filter setting at compact scale.
+            clickGui(context,"category",Module.Category.RENDER.name());
+            clickGui(context,"inspect","StorageESP");
+            Path settingsShot=context.takeScreenshot("lauua-storage-settings");
+            try { Files.copy(settingsShot,Path.of("build/libs/lauua-storage-settings.png"),StandardCopyOption.REPLACE_EXISTING); }
+            catch(IOException e) { throw new AssertionError("Unable to save settings screenshot",e); }
+            clickGui(context,"setting","Barrels");
+            context.runOnClient(mc -> {
+                Module storage=LauuaClient.INSTANCE.modules().find("StorageESP").orElseThrow();
+                Setting<?> barrels=storage.settings().stream().filter(s->s.name.equals("Barrels")).findFirst().orElseThrow();
+                if(!Boolean.FALSE.equals(barrels.get())) throw new AssertionError("Barrels filter setting not changed by GUI");
+                storage.setEnabled(false);
+                if(!com.lauua.lauuacheats.modules.WorldModules.scanning(LauuaClient.INSTANCE.modules()))
+                    throw new AssertionError("scanner stopped while other scanners are enabled");
+                storage.setEnabled(true);
                 mc.gui.setScreen(null);
             });
             // Live packet changes after initial scan must update markers without reconnecting.
@@ -83,9 +112,27 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                 var live=LauuaClient.INSTANCE.scanner().visible();
                 if(live.stream().anyMatch(h->h.pos().equals(new BlockPos(1,100,0))))
                     throw new AssertionError("stale chest marker after removal: " + live);
-                if(live.stream().noneMatch(h->h.pos().equals(new BlockPos(4,100,0))))
-                    throw new AssertionError("new barrel missing after live update: " + live);
+                if(live.stream().noneMatch(h->h.pos().equals(new BlockPos(4,100,0))
+                    && h.storageType()==ChunkScanner.StorageType.BARREL))
+                    throw new AssertionError("new typed barrel missing after live update: " + live);
             });
         }
+    }
+    private static void clickGui(ClientGameTestContext context,String action,String name) {
+        int[] pixel=new int[2];
+        context.runOnClient(mc -> {
+            ClickGui gui=(ClickGui)((GuiScreenAccessor)mc.gui).lauuacheats$screen();
+            int[] point=switch(action) {
+                case "category" -> gui.categoryPoint(Module.Category.valueOf(name));
+                case "inspect" -> gui.moduleInspectPoint(name);
+                case "setting" -> gui.settingPoint(name);
+                default -> throw new IllegalArgumentException(action);
+            };
+            pixel[0]=point[0]*mc.getWindow().getScreenWidth()/mc.getWindow().getGuiScaledWidth();
+            pixel[1]=point[1]*mc.getWindow().getScreenHeight()/mc.getWindow().getGuiScaledHeight();
+        });
+        context.getInput().setCursorPos(pixel[0],pixel[1]);
+        context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
     }
 }

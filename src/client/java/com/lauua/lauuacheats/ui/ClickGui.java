@@ -252,6 +252,19 @@ public final class ClickGui extends Screen {
             text(g,"::"+e.name(),e.x()+2,e.y()+2,TEXT);
         }
     }
+    /** Test hooks return real rendered hit targets, not inferred positions. */
+    public int[] categoryPoint(Module.Category target) {
+        return new int[]{x+26,y+78+target.ordinal()*20};
+    }
+    public int[] moduleInspectPoint(String name) {
+        for(Card card:cards) if(card.module().name.equals(name)) return new int[]{card.bounds().x()+20,card.bounds().y()+13};
+        throw new IllegalStateException("Card not rendered: " + name);
+    }
+    public int[] settingPoint(String name) {
+        for(var row:settingRows.entrySet()) if(row.getKey().name.equals(name))
+            return new int[]{row.getValue().x()+row.getValue().w()/2,row.getValue().y()+10};
+        throw new IllegalStateException("Setting not rendered: " + name + " visible=" + settingRows.keySet().stream().map(s->s.name).toList());
+    }
     /** Test hook for actual client input: coordinates come from the last rendered card layout. */
     public int[] moduleTogglePoint(String name) {
         for(Card card:cards) if(card.module().name.equals(name)) {
