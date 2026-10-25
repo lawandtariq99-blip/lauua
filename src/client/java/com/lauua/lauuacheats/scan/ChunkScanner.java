@@ -79,14 +79,29 @@ public final class ChunkScanner {
         WorldIndex w=worlds.computeIfAbsent(key,k->new WorldIndex());
         while(worlds.size()>MAX_WORLDS) worlds.remove(worlds.keySet().iterator().next());
         int px=mc.player.blockPosition().getX()>>4, pz=mc.player.blockPosition().getZ()>>4;
-        if(px!=sweepX || pz!=sweepZ) { sweepX=px; sweepZ=pz; sweepIndex=0; }
+        if(px!=sweepX || pz!=sweepZ) {
+            sweepX=px; sweepZ=pz; sweepIndex=0;
+            if(current!=null && (Math.abs(current.getPos().x()-px)>4 || Math.abs(current.getPos().z()-pz)>4)) current=null;
+        }
+        // Chunk packets can deliver block-entity data AFTER the first chunk load. Revisit loaded
+        // chunks instead of permanently marking them done; refresh the player's chunk first.
+        if(tick%40==0) sweepIndex=0;
+        LevelChunk here=mc.level.getChunkSource().getChunk(px,pz,false);
+        if(here!=null && here!=current) {
+            Result previous=w.results.get(key(px,pz));
+            if(previous==null || tick-previous.updatedTick()>80) {
+                queue.removeIf(c->c==here);
+                queued.add(key(px,pz));
+                queue.addFirst(here);
+            }
+        }
         // Bootstrap chunks already loaded before a module was toggled, then sweep around movement.
         for(int n=0;n<6 && sweepIndex<SWEEP.size();n++) {
             int[] off=SWEEP.get(sweepIndex++);
             LevelChunk chunk=mc.level.getChunkSource().getChunk(px+off[0],pz+off[1],false);
             if(chunk==null) continue;
             Result old=w.results.get(key(chunk.getPos().x(),chunk.getPos().z()));
-            if(old==null || tick-old.updatedTick()>600) enqueue(chunk);
+            if(old==null || tick-old.updatedTick()>240) enqueue(chunk);
         }
         if(current==null) {
             current=queue.pollFirst();

@@ -26,7 +26,9 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                     throw new AssertionError("StorageESP should be on by default");
                 var highlights=LauuaClient.INSTANCE.scanner().visible();
                 if(highlights.stream().noneMatch(h->h.pos().equals(new BlockPos(1,100,0)) && h.kind()==ChunkScanner.Kind.STORAGE))
-                    throw new AssertionError("chest marker missing: " + highlights);
+                    throw new AssertionError("chest marker missing: " + highlights + " stats="
+                        + LauuaClient.INSTANCE.scanner().stats("singleplayer/"+mc.level.dimension().identifier())
+                        + " current="+mc.level.getBlockState(new BlockPos(1,100,0)) + " player="+mc.player.blockPosition());
                 if(highlights.stream().noneMatch(h->h.pos().equals(new BlockPos(3,100,0)) && h.kind()==ChunkScanner.Kind.SPAWNER))
                     throw new AssertionError("spawner marker missing: " + highlights);
                 mc.gui.setScreen(LauuaClient.INSTANCE.createGui());
