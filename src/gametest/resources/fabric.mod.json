@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "lauuacheats-gametest",
+  "version": "1.0.0",
+  "name": "Lauua Client Regression Tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["com.lauua.lauuacheats.test.ExplorerGameTest"]
+  },
+  "depends": { "lauuacheats": "*", "fabric-api": "*" }
+}

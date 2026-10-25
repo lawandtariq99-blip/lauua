@@ -4,7 +4,7 @@
 # against bad commits.
 
 name: build
-on: [pull_request, push]
+on: [pull_request, push, workflow_dispatch]
 
 jobs:
   build:
@@ -52,6 +52,9 @@ jobs:
               break
             fi
           done
+      - name: run client game tests in virtual display
+        run: |
+          timeout 420s xvfb-run -a ./gradlew runClientGameTest --no-configuration-cache
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -60,7 +63,7 @@ jobs:
 
   publish-preview:
     # Direct JAR alternative when Chrome blocks the Actions artifact ZIP.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f86872cf-lauua'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/arena/f86872cf-lauua'
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -73,15 +76,15 @@ jobs:
           path: artifact
       - name: checksum distributable
         run: |
-          test -s artifact/lauuacheats-1.0.0.jar
+          test -s artifact/lauuacheats-1.1.0.jar
           cd artifact
-          sha256sum lauuacheats-1.0.0.jar > SHA256SUMS
+          sha256sum lauuacheats-1.1.0.jar > SHA256SUMS
       - name: publish experimental release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create lauuacheats-v1.0.0-experimental \
-            artifact/lauuacheats-1.0.0.jar artifact/SHA256SUMS \
+          gh release create lauuacheats-v1.1.0-experimental \
+            artifact/lauuacheats-1.1.0.jar artifact/SHA256SUMS \
             --repo "${{ github.repository }}" --target "$GITHUB_SHA" --prerelease \
-            --title "Lauua Cheats 1.0.0 (experimental)" \
+            --title "Lauua Cheats 1.1.0 (experimental)" \
             --notes "Minecraft 26.2 client-only Fabric mod. Built with Java 25 by GitHub Actions from this release's source commit. NOT play-tested; inspect the source and verify SHA256SUMS before using. This release does not contain a sources JAR."

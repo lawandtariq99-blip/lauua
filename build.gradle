@@ -16,6 +16,7 @@ loom {
 
 	mods {
 		"lauuacheats" {
+			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
 	}
@@ -78,4 +79,21 @@ publishing {
 		// The repositories here will be used for publishing your artifact, not for
 		// retrieving dependencies.
 	}
+}
+
+// Pure scoring tests do not require launching Minecraft; client gametests exercise in-world behavior.
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+tasks.withType(Test).configureEach { useJUnitPlatform() }
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'lauuacheats-gametest'
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true // Local ephemeral test worlds only; no server distribution.
+    }
 }

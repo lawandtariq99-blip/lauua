@@ -7,6 +7,8 @@ import com.lauua.lauuacheats.modules.CombatModules;
 import com.lauua.lauuacheats.modules.WorldModules;
 import com.lauua.lauuacheats.modules.Extras;
 import com.lauua.lauuacheats.rotation.RotationManager;
+import com.lauua.lauuacheats.render.WorldEsp;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import com.lauua.lauuacheats.scan.*;
 import com.lauua.lauuacheats.settings.Setting.*;
 import com.lauua.lauuacheats.text.TextPolicy;
@@ -21,6 +23,10 @@ import org.lwjgl.glfw.GLFW;
 import java.util.Locale;
 
 public final class LauuaClient implements ClientModInitializer {
+    public static LauuaClient INSTANCE;
+    public ModuleManager modules() { return modules; }
+    public ChunkScanner scanner() { return scanner; }
+    public ClickGui createGui() { return createGui(); }
     public static final String ID="lauuacheats", PREFIX=".lauua";
     private final ModuleManager modules=new ModuleManager();
     private final EventBus bus=new EventBus();
@@ -35,6 +41,7 @@ public final class LauuaClient implements ClientModInitializer {
     private String world="";
 
     @Override public void onInitializeClient() {
+        INSTANCE=this;
         modules.register(new Module("Vanilla Mode","Clamp reach and enforce packet ordering",Module.Category.MISC,-1,true,Module.Tier.A,"Enabled by default") {
             final BooleanSetting brand=add(new BooleanSetting("Vanilla brand",true));
             final IntSlider place=add(new IntSlider("Place delay ms",100,0,1000));
@@ -46,10 +53,13 @@ public final class LauuaClient implements ClientModInitializer {
         });
         CombatModules.register(modules,rotations,macros);
         WorldModules.register(modules,scanner,hud,()->world);
+        new WorldEsp(scanner,modules).register();
+        ClientChunkEvents.CHUNK_LOAD.register(scanner::loaded);
+        ClientChunkEvents.CHUNK_UNLOAD.register(scanner::unloaded);
         Extras.register(modules,hud,rotations);
         try { profiles.load("default"); } catch (Exception e) { System.err.println("[Lauua] profile load failed: " + e); }
         hud.register(modules);
-        keys.bind(GLFW.GLFW_KEY_RIGHT_SHIFT,()-> Minecraft.getInstance().gui.setScreen(new ClickGui(modules,hud)));
+        keys.bind(GLFW.GLFW_KEY_RIGHT_SHIFT,()-> Minecraft.getInstance().gui.setScreen(createGui()));
         keys.bind(GLFW.GLFW_KEY_END,()-> { for(Module m:modules.all()) m.setEnabled(false); rotations.clear(); macros.abort(); });
         keys.bind(GLFW.GLFW_KEY_INSERT,()->command("waypoint Quick"));
         keys.bind(GLFW.GLFW_KEY_F9,()->macros.start("anchor"));
@@ -76,7 +86,7 @@ public final class LauuaClient implements ClientModInitializer {
         String[] args=input.split("\\s+",3);
         try {
             switch(args[0].toLowerCase(Locale.ROOT)) {
-                case "gui" -> mc.gui.setScreen(new ClickGui(modules,hud));
+                case "gui" -> mc.gui.setScreen(createGui());
                 case "panic" -> { for(Module m:modules.all()) m.setEnabled(false); rotations.clear(); macros.abort(); reply("Modules disabled"); }
                 case "toggle" -> { if(args.length<2) throw new IllegalArgumentException("toggle <module>"); Module m=modules.find(input.substring("toggle".length()).trim()).orElseThrow(); m.toggle(); reply(m.name+" " + (m.enabled()?"ON":"OFF")); }
                 case "save" -> { profiles.save(args.length>1?args[1]:"default"); reply("Profile saved"); }
