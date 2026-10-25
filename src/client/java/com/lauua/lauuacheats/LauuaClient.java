@@ -1,6 +1,7 @@
 package com.lauua.lauuacheats;
 
 import com.lauua.lauuacheats.core.*;
+import com.lauua.lauuacheats.core.Module;
 import com.lauua.lauuacheats.hud.HudRegistry;
 import com.lauua.lauuacheats.modules.CombatModules;
 import com.lauua.lauuacheats.modules.WorldModules;

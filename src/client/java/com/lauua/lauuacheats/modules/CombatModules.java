@@ -1,6 +1,7 @@
 package com.lauua.lauuacheats.modules;
 
 import com.lauua.lauuacheats.core.*;
+import com.lauua.lauuacheats.core.Module;
 import com.lauua.lauuacheats.rotation.RotationManager;
 import com.lauua.lauuacheats.settings.Setting.*;
 import net.minecraft.client.Minecraft;
@@ -8,8 +9,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.decoration.EndCrystal;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -68,7 +69,7 @@ public final class CombatModules {
         for(int i=0;i<36;i++) if(mc.player.getInventory().getItem(i).is(item)) {
             // Inventory menu: 0..8 hotbar -> 36..44; 9..35 main inventory -> 9..35.
             int slot=i<9?i+36:i;
-            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,slot,40,ClickType.SWAP,mc.player);
+            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,slot,40,ContainerInput.SWAP,mc.player);
             break;
         }
     }
