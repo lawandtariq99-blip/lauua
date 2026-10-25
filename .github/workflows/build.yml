@@ -81,7 +81,7 @@ jobs:
 
   publish-preview:
     # Direct JAR alternative when Chrome blocks the Actions artifact ZIP.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f86872cf-lauua'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f86872cf-lauua' && contains(github.event.head_commit.message, '[release]')
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -94,16 +94,16 @@ jobs:
           path: artifact
       - name: checksum distributable
         run: |
-          test -s artifact/lauuacheats-1.1.0.jar
+          test -s artifact/lauuacheats-1.1.1.jar
           cd artifact
-          sha256sum lauuacheats-1.1.0.jar > SHA256SUMS
+          sha256sum lauuacheats-1.1.1.jar > SHA256SUMS
       - name: publish experimental release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          assets=(artifact/lauuacheats-1.1.0.jar artifact/SHA256SUMS)
+          assets=(artifact/lauuacheats-1.1.1.jar artifact/SHA256SUMS)
           if [ -s artifact/lauua-gui-preview.png ]; then assets+=(artifact/lauua-gui-preview.png); fi
-          gh release create lauuacheats-v1.1.0-experimental "${assets[@]}" \
+          gh release create lauuacheats-v1.1.1-experimental "${assets[@]}" \
             --repo "${{ github.repository }}" --target "$GITHUB_SHA" --prerelease \
-            --title "Lauua Cheats 1.1.0 (experimental)" \
+            --title "Lauua Cheats 1.1.1 (experimental)" \
             --notes "Minecraft 26.2 client-only Fabric mod. Built with Java 25 by GitHub Actions from this release's source commit. CI client gametest covers chest/spawner scan, live updates, GUI drawing and clicking in a disposable singleplayer world. Multiplayer and other modules are NOT fully tested; inspect the source and verify SHA256SUMS before using."

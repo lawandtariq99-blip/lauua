@@ -25,6 +25,7 @@ public final class ClickGui extends Screen {
     private EditBox search;
     private Module.Category category=Module.Category.WORLD;
     private Module selected;
+    private boolean detailOpen;
     private String query="";
     private int x,y,w,h,sidebar,detail,listScroll,settingsScroll;
     private int dragX,dragY;
@@ -46,7 +47,7 @@ public final class ClickGui extends Screen {
     @Override protected void init() {
         w=Math.min(940,width-22); h=Math.min(555,height-24);
         x=Math.max(11,(width-w)/2); y=Math.max(12,(height-h)/2);
-        sidebar=w<650?126:160; detail=w<650?180:244;
+        sidebar=w<690?112:160; detail=w<690?0:244;
         search=new EditBox(font,x+sidebar+19,y+51,Math.max(90,w-sidebar-detail-44),19,Component.literal("Search modules"));
         search.setValue(query);
         search.setHint(Component.literal("Search modules…"));
@@ -66,6 +67,7 @@ public final class ClickGui extends Screen {
         super.tick();
         int[] p=mouse(); boolean down=GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().handle(),GLFW.GLFW_MOUSE_BUTTON_LEFT)==GLFW.GLFW_PRESS;
         if(!down) { moving=false; movingHud=null; sliding=null; }
+        search.visible=detail>0 || !detailOpen;
         if(down && !wasDown && new Rect(x,y,w,32).has(p[0],p[1]) && p[0]<x+w-72) {
             moving=true; dragX=p[0]-x; dragY=p[1]-y;
         }
@@ -86,14 +88,18 @@ public final class ClickGui extends Screen {
     private void onClick(int mx,int my,int button) {
         if(new Rect(x+w-66,y+7,56,18).has(mx,my)) { save.run(); return; }
         if(mx>=x+11 && mx<x+sidebar-10 && my>=y+101 && my<y+101+Module.Category.values().length*31) {
-            int idx=(my-y-101)/31; category=Module.Category.values()[idx]; listScroll=0; return;
+            int idx=(my-y-101)/31; category=Module.Category.values()[idx]; listScroll=0; detailOpen=false; return;
         }
         if(button==GLFW.GLFW_MOUSE_BUTTON_LEFT) for(HudRegistry.Element e:hud.all()) {
             if(new Rect(e.x(),e.y(),14,11).has(mx,my)) { movingHud=e.name(); dragX=mx-e.x(); dragY=my-e.y(); return; }
         }
+        if(detail==0 && detailOpen && new Rect(x+sidebar+12,y+38,86,25).has(mx,my)) {
+            detailOpen=false; return;
+        }
         for(Card card:cards) if(card.bounds().has(mx,my)) {
             selected=card.module(); settingsScroll=0;
             if(button==GLFW.GLFW_MOUSE_BUTTON_LEFT && mx>=card.bounds().x()+card.bounds().w()-46) card.module().toggle();
+            else if(detail==0) detailOpen=true;
             return;
         }
         for(var row:settingRows.entrySet()) if(row.getValue().has(mx,my)) {
@@ -157,7 +163,7 @@ public final class ClickGui extends Screen {
         int cols=centerW>=380?2:1,cardW=(centerW-17-(cols-1)*8)/cols;
         int maxRows=Math.max(1,(h-115)/68);
         listScroll=Math.min(listScroll,Math.max(0,(filtered.size()+cols-1)/cols-maxRows));
-        for(int i=listScroll*cols;i<filtered.size();i++) {
+        for(int i=listScroll*cols;i<filtered.size() && (detail>0 || !detailOpen);i++) {
             int row=(i/cols)-listScroll,column=i%cols,top=y+91+row*68;
             if(top+61>y+h-10) break;
             Module m=filtered.get(i); int left=centerX+8+column*(cardW+8);
@@ -172,9 +178,15 @@ public final class ClickGui extends Screen {
             rect(g,left+cardW-(m.enabled()?25:39),top+12,12,12,m.enabled()?MINT:MUTED);
             cards.add(new Card(m,new Rect(left,top,cardW,60)));
         }
-        int panelX=x+w-detail+2,panelW=detail-11;
-        rect(g,panelX-2,y+32,1,h-32,0xFF254558);
-        text(g,"INSPECTOR",panelX+13,y+47,MUTED);
+        if(detail>0 || detailOpen) {
+        int panelX=detail==0?x+sidebar+4:x+w-detail+2;
+        int panelW=detail==0?w-sidebar-13:detail-11;
+        if(detail==0) {
+            rect(g,panelX-2,y+32,panelW+8,h-32,BG);
+            rect(g,panelX+9,y+38,87,25,CARD);
+            text(g,"← MODULES",panelX+17,y+46,MINT);
+        } else rect(g,panelX-2,y+32,1,h-32,0xFF254558);
+        text(g,"INSPECTOR",panelX+(detail==0?114:13),y+47,MUTED);
         if(selected!=null) {
             text(g,shorten(selected.name,26),panelX+13,y+72,TEXT);
             text(g,"TIER " + selected.tier.name() + (selected.enabled()?"    ACTIVE":"    PAUSED"),panelX+13,y+91,selected.enabled()?MINT:PURPLE);
@@ -196,6 +208,7 @@ public final class ClickGui extends Screen {
                 settingRows.put(s,new Rect(panelX+10,ry,panelW-14,46));
             }
         } else text(g,"Select a module",panelX+13,y+73,MUTED);
+        }
         super.extractRenderState(g,mx,my,delta); // Search field is the only vanilla widget.
         for(HudRegistry.Element e:hud.all()) { rect(g,e.x(),e.y(),14,11,0xBB407E86); text(g,"::",e.x()+2,e.y()+1,TEXT); }
     }

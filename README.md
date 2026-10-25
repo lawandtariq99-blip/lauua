@@ -1,8 +1,8 @@
 # Lauua Cheats (experimental)
 
-Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`, package `com.lauua.lauuacheats`, version `1.1.0`. Based on the official [Fabric example mod's 26.2 branch](https://github.com/FabricMC/fabric-example-mod/tree/26.2). Java **25**, Fabric Loader **0.20.1**, Fabric API **0.161.0+26.2**, Gradle wrapper **9.8.2**, Loom **1.19-SNAPSHOT**.
+Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`, package `com.lauua.lauuacheats`, version `1.1.1`. Based on the official [Fabric example mod's 26.2 branch](https://github.com/FabricMC/fabric-example-mod/tree/26.2). Java **25**, Fabric Loader **0.20.1**, Fabric API **0.161.0+26.2**, Gradle wrapper **9.8.2**, Loom **1.19-SNAPSHOT**.
 
-**Download:** Use the [experimental v1.1.0 release](https://github.com/lawandtariq99-blip/lauua/releases/tag/lauuacheats-v1.1.0-experimental), not the old v1.0.0 artifact. The JAR is built after the CI client game test passes. Only install it in a test profile first.
+**Download:** Use the [experimental v1.1.1 release](https://github.com/lawandtariq99-blip/lauua/releases/tag/lauuacheats-v1.1.1-experimental), not the old v1.0.0 artifact. The JAR is built after the CI client game test passes. Only install it in a test profile first.
 
 **Build:** Install JDK 25, put `java` on PATH / set `JAVA_HOME`, then run `./gradlew build` from this directory. Find the distributable in `build/libs/`; install it alongside Fabric API in a 26.2 Fabric client. Only the client entrypoint is registered; never install on a dedicated server.
 
@@ -50,7 +50,7 @@ Tiers are **descriptive labels**, not a guarantee of server compatibility or saf
 | TriggerBot | D | Attack hovered mob at cooldown |
 | AutoTool | B | Select fastest hotbar tool while breaking |
 
-The ClickGUI is a custom-rendered dashboard with navigation sidebar, live search, module cards, on/off switches, tier labels, an inspector with clickable sliders/toggles and a Save button. Scroll the module list or inspector; right-click a setting to reset it. Non-numeric complex settings (lists, keybinds and strings) still need JSON editing and a profile reload. HUD registry renders coordinates, reach and active modules, and has configurable background/opacity/shadow fields; drag the blue `::` handles in the ClickGUI to reposition, or use the chat HUD move command.
+The ClickGUI is a custom-rendered dashboard with navigation sidebar, live search, module cards, on/off switches, tier labels, an inspector with clickable sliders/toggles and a Save button. At small GUI resolutions, selecting a card opens a full-width inspector with a **Modules** back button. Scroll the module list or inspector; right-click a setting to reset it. Non-numeric complex settings (lists, keybinds and strings) still need JSON editing and a profile reload. HUD registry renders coordinates, reach and active modules, and has configurable background/opacity/shadow fields; drag the blue `::` handles in the ClickGUI to reposition, or use the chat HUD move command.
 
 The macro engine supports place, break, use, hotbar switching, attack, look, chat and wait steps, delays/loops and release cancellation; actions are queued through the shared rotation manager. Macro definitions are currently Java registrations rather than an editor or persistent macro files. Rotation modes are instant/linear/smoothed, but Vanilla Mode forces immediate ordering. The explosion damage predictor uses distance without armor/obstruction for self damage, and line of sight for target damage; **it is not a reliable PvP safety guarantee**.
 
