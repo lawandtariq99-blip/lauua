@@ -1,6 +1,7 @@
 package com.lauua.lauuacheats.ui;
 
 import com.lauua.lauuacheats.core.*;
+import com.lauua.lauuacheats.core.Module;
 import com.lauua.lauuacheats.hud.HudRegistry;
 import com.lauua.lauuacheats.settings.Setting;
 import net.minecraft.client.Minecraft;

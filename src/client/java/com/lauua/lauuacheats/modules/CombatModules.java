@@ -14,6 +14,7 @@ import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.*;
 import java.util.*;
@@ -42,7 +43,7 @@ public final class CombatModules {
         @Override public void tick() {
             Minecraft mc=Minecraft.getInstance(); if(mc.player==null || mc.level==null || ++ticks%interval.get()!=0) return;
             double radius=rotations.clampReach(range.get());
-            mc.level.getEntitiesOfClass(Mob.class,mc.player.getBoundingBox().inflate(radius),e->e.isAlive() && e!=mc.player).stream()
+            mc.level.getEntitiesOfClass(Mob.class,mc.player.getBoundingBox().inflate(radius),Mob::isAlive).stream()
                 .min(Comparator.comparingDouble(e->e.distanceToSqr(mc.player))).ifPresent(target -> {
                     float[] angles=angles(mc.player.getEyePosition(),target.getEyePosition());
                     rotations.enqueue(RotationManager.Type.ATTACK,angles[0],angles[1],()-> {

@@ -21,7 +21,7 @@ public final class CoordLogger {
         var pos=mc.player.blockPosition();
         Point p=new Point(name,pos.getX(),pos.getY(),pos.getZ(),world,Instant.now().toString());
         if(points.size()==256) points.removeFirst(); points.addLast(p);
-        mc.player.displayClientMessage(Component.literal("[Lauua] " + name + " " + pos.toShortString()),false);
+        mc.player.sendSystemMessage(Component.literal("[Lauua] " + name + " " + pos.toShortString()));
         Files.createDirectories(dir);
         Files.writeString(dir.resolve("coordinates.txt"),p.time()+" "+p.world()+" "+p.name()+" "+p.x()+" "+p.y()+" "+p.z()+"\n",StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
     }

@@ -43,7 +43,7 @@ public final class ChunkScanner {
             }
             if(current==null) return;
         }
-        int x=current.getPos().x, z=current.getPos().z;
+        int x=current.getPos().x(), z=current.getPos().z();
         if(mc.level.getChunkSource().getChunk(x,z,false)!=current) { reset(); return; } // unloaded/replaced mid-scan
         LevelChunkSection[] sections=current.getSections(); int budget=256;
         while(budget>0 && section<sections.length) {

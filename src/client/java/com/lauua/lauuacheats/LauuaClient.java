@@ -91,6 +91,6 @@ public final class LauuaClient implements ClientModInitializer {
     }
     private void reply(String message) {
         Minecraft mc=Minecraft.getInstance();
-        if(mc.player!=null) mc.player.displayClientMessage(Component.literal("[Lauua] " + message),false);
+        if(mc.player!=null) mc.player.sendSystemMessage(Component.literal("[Lauua] " + message));
     }
 }

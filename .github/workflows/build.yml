@@ -22,7 +22,16 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build
-        run: ./gradlew build
+        run: |
+          set -o pipefail
+          ./gradlew build 2>&1 | tee build-output.txt
+      - name: include failure diagnostics in check summary
+        if: failure()
+        run: |
+          echo '### Gradle diagnostics' >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 250 build-output.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
