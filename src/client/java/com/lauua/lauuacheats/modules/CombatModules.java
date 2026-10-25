@@ -70,7 +70,7 @@ public final class CombatModules {
         for(int i=0;i<36;i++) if(mc.player.getInventory().getItem(i).is(item)) {
             // Inventory menu: 0..8 hotbar -> 36..44; 9..35 main inventory -> 9..35.
             int slot=i<9?i+36:i;
-            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,slot,40,ContainerInput.SWAP,mc.player);
+            mc.gameMode.handleContainerClick(mc.player.inventoryMenu.containerId,slot,40,ContainerInput.SWAP,mc.player);
             break;
         }
     }
