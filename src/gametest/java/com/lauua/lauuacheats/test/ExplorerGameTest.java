@@ -42,7 +42,7 @@ public final class ExplorerGameTest implements FabricClientGameTest {
             int[] scrollAt=new int[2];
             context.runOnClient(mc -> {
                 int gw=mc.getWindow().getGuiScaledWidth(),gh=mc.getWindow().getGuiScaledHeight();
-                scrollAt[0]=(gw/2-140)*mc.getWindow().getScreenWidth()/gw;
+                scrollAt[0]=(gw/2-60)*mc.getWindow().getScreenWidth()/gw;
                 scrollAt[1]=(gh/2)*mc.getWindow().getScreenHeight()/gh;
             });
             context.getInput().setCursorPos(scrollAt[0],scrollAt[1]);
