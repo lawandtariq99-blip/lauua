@@ -78,6 +78,8 @@ jobs:
           else
             echo "::warning title=GUI screenshot missing::No screenshot saved by client gametest"
           fi
+          worldshot=$(find . -type f -name 'lauua-live-esp.png' -print -quit)
+          if [ -n "$worldshot" ] && [ "$worldshot" != './build/libs/lauua-live-esp.png' ]; then cp "$worldshot" build/libs/lauua-live-esp.png; fi
           settings=$(find . -type f -name 'lauua-storage-settings.png' -print -quit)
           if [ -n "$settings" ]; then
             if [ "$settings" != './build/libs/lauua-storage-settings.png' ]; then cp "$settings" build/libs/lauua-storage-settings.png; fi
@@ -105,9 +107,9 @@ jobs:
           path: artifact
       - name: checksum distributable
         run: |
-          test -s artifact/lauuacheats-1.1.1.jar
+          test -s artifact/lauuacheats-1.2.0.jar
           cd artifact
-          sha256sum lauuacheats-1.1.1.jar > SHA256SUMS
+          sha256sum lauuacheats-1.2.0.jar > SHA256SUMS
       - name: publish experimental release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -115,40 +117,14 @@ jobs:
         run: |
           if [ "$PREVIEW_ONLY" = 'true' ]; then
             test -s artifact/lauua-gui-preview.png
-            gh release upload lauuacheats-v1.1.1-experimental artifact/lauua-gui-preview.png \
+            gh release upload lauuacheats-v1.2.0-experimental artifact/lauua-gui-preview.png \
               --repo "${{ github.repository }}" --clobber
             exit 0
           fi
-          assets=(artifact/lauuacheats-1.1.1.jar artifact/SHA256SUMS)
+          assets=(artifact/lauuacheats-1.2.0.jar artifact/SHA256SUMS)
           if [ -s artifact/lauua-gui-preview.png ]; then assets+=(artifact/lauua-gui-preview.png); fi
-          gh release create lauuacheats-v1.1.1-experimental "${assets[@]}" \
+          if [ -s artifact/lauua-storage-settings.png ]; then assets+=(artifact/lauua-storage-settings.png); fi
+          gh release create lauuacheats-v1.2.0-experimental "${assets[@]}" \
             --repo "${{ github.repository }}" --target "$GITHUB_SHA" --prerelease \
-            --title "Lauua Cheats 1.1.1 (experimental)" \
-            --notes "Minecraft 26.2 client-only Fabric mod. Built with Java 25 by GitHub Actions from this release's source commit. CI client gametest covers chest/spawner scan, live updates, GUI drawing and clicking in a disposable singleplayer world. Multiplayer and other modules are NOT fully tested; inspect the source and verify SHA256SUMS before using."
-
-  inspect-gui:
-    # Temporary visual review: expose the test screenshot as an unreferenced Git blob,
-    # so it can be retrieved through api.github.com where Actions artifacts are blocked.
-    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[inspect]')
-    needs: build
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: Artifacts
-          path: artifact
-      - name: share screenshot blob ID for inspection
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          test -s artifact/lauua-gui-preview.png
-          sha=$(gh api -X POST "repos/${{ github.repository }}/git/blobs" \
-            -f encoding=base64 -f content="$(base64 -w0 artifact/lauua-gui-preview.png)" --jq .sha)
-          echo "::notice title=GUI screenshot blob::${sha}"
-          if [ -s artifact/lauua-storage-settings.png ]; then
-            sha=$(gh api -X POST "repos/${{ github.repository }}/git/blobs" \
-              -f encoding=base64 -f content="$(base64 -w0 artifact/lauua-storage-settings.png)" --jq .sha)
-            echo "::notice title=Settings screenshot blob::${sha}"
-          fi
+            --title "Lauua Cheats 1.2.0 (experimental)" \
+            --notes "Minecraft 26.2 client-only Fabric mod. Built with Java 25 by GitHub Actions from this release's source commit. CI client gametest covers storage/spawner/ore/portal indexing, live updates, chunk unload invalidation, GUI navigation/settings and screenshots in a disposable singleplayer world. Render output on diverse graphics stacks, multiplayer and other modules are NOT fully tested; inspect the source and verify SHA256SUMS before using."

@@ -23,7 +23,7 @@ public final class ExplorerGameTest implements FabricClientGameTest {
         context.getInput().resizeWindow(1600,900); // Typical desktop size; default gametest window is tiny.
         try(TestSingleplayerContext world=context.worldBuilder().create()) {
             world.getServer().runCommand("/setblock 0 98 0 minecraft:stone");
-            world.getServer().runCommand("/tp @a 0 99 0");
+            world.getServer().runCommand("/tp @a 0 99 -4 0 0");
             world.getServer().runCommand("/setblock 1 100 0 minecraft:chest");
             world.getServer().runCommand("/setblock 2 100 0 minecraft:crafting_table");
             world.getServer().runCommand("/setblock 3 100 0 minecraft:spawner");
@@ -54,6 +54,14 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                 if(LauuaClient.INSTANCE.scanner().results(key).stream()
                     .noneMatch(r->r.x()==0 && r.z()==0 && r.clusterScore()>=12))
                     throw new AssertionError("base cluster score did not include chest + crafting table");
+            });
+            Path espShot=context.takeScreenshot("lauua-live-esp");
+            try {
+                Files.createDirectories(Path.of("build/libs"));
+                Files.copy(espShot,Path.of("build/libs/lauua-live-esp.png"),StandardCopyOption.REPLACE_EXISTING);
+            }
+            catch(IOException e) { throw new AssertionError("Unable to save world ESP screenshot",e); }
+            context.runOnClient(mc -> {
                 mc.gui.setScreen(LauuaClient.INSTANCE.createGui());
                 if(!(((GuiScreenAccessor)mc.gui).lauuacheats$screen() instanceof ClickGui))
                     throw new AssertionError("GUI did not open");
