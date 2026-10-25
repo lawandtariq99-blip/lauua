@@ -23,6 +23,7 @@ public final class WorldModules {
             final IntSlider budget=add(new IntSlider("Blocks per tick",2048,256,8192));
             final IntSlider range=add(new IntSlider("ESP range",96,16,192));
             final BooleanSetting radar=add(new BooleanSetting("Radar",true));
+            final IntSlider radarZoom=add(new IntSlider("Radar px per block",2,1,4));
             final DoubleSlider storageWeight=add(new DoubleSlider("Storage weight",1.5,0,10));
             final DoubleSlider utilityWeight=add(new DoubleSlider("Crafting weight",3.0,0,12));
             final DoubleSlider obsidianWeight=add(new DoubleSlider("Obsidian weight",0.8,0,6));
@@ -100,8 +101,11 @@ public final class WorldModules {
             g.fill(x,y+17+grid*21,x+102,y+18+grid*21,0x223F6C72);
         }
         int px=mc.player.blockPosition().getX(),pz=mc.player.blockPosition().getZ();
+        int zoom=cluster.flatMap(m->m.settings().stream()
+            .filter(s->s.name.equals("Radar px per block") && s.get() instanceof Integer).findFirst())
+            .map(s->(Integer)s.get()).orElse(2);
         for(var mark:scanner.visible()) {
-            int dx=(mark.pos().getX()-px)/2,dz=(mark.pos().getZ()-pz)/2;
+            int dx=(mark.pos().getX()-px)*zoom,dz=(mark.pos().getZ()-pz)*zoom;
             int mx=x+51+dx,mz=y+59+dz;
             if(mx<x+2 || mx>x+100 || mz<y+19 || mz>y+99) continue;
             int color=switch(mark.kind()) {
@@ -122,6 +126,6 @@ public final class WorldModules {
             g.fill(mx-1,mz-1,mx+2,mz+2,color);
         }
         g.fill(x+49,y+57,x+54,y+62,0xFFFFFFFF);
-        g.text(mc.font,"100 blocks / 2px",x+3,y+103,0xFF8BA8BA);
+        g.text(mc.font,"~"+(50/zoom)+" block radius",x+3,y+103,0xFF8BA8BA);
     }
 }
