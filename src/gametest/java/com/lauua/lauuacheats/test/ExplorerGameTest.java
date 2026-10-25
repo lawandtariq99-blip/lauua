@@ -39,6 +39,15 @@ public final class ExplorerGameTest implements FabricClientGameTest {
             });
             context.waitTicks(2); // causes HUD and ESP extraction, catching runtime mixin/render errors
             context.takeScreenshot("lauua-explorer-26_2");
+            int[] scrollAt=new int[2];
+            context.runOnClient(mc -> {
+                int gw=mc.getWindow().getGuiScaledWidth(),gh=mc.getWindow().getGuiScaledHeight();
+                scrollAt[0]=(gw/2-140)*mc.getWindow().getScreenWidth()/gw;
+                scrollAt[1]=(gh/2)*mc.getWindow().getScreenHeight()/gh;
+            });
+            context.getInput().setCursorPos(scrollAt[0],scrollAt[1]);
+            context.getInput().scroll(-2);
+            context.waitTicks(2);
             int[] pixel=new int[2];
             context.runOnClient(mc -> {
                 var gui=(ClickGui)((GuiScreenAccessor)mc.gui).lauuacheats$screen();
