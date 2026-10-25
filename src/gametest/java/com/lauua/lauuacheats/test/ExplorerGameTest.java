@@ -33,6 +33,10 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                         + " current="+mc.level.getBlockState(new BlockPos(1,100,0)) + " player="+mc.player.blockPosition());
                 if(highlights.stream().noneMatch(h->h.pos().equals(new BlockPos(3,100,0)) && h.kind()==ChunkScanner.Kind.SPAWNER))
                     throw new AssertionError("spawner marker missing: " + highlights);
+                String key="singleplayer/"+mc.level.dimension().identifier();
+                if(LauuaClient.INSTANCE.scanner().results(key).stream()
+                    .noneMatch(r->r.x()==0 && r.z()==0 && r.clusterScore()>=12))
+                    throw new AssertionError("base cluster score did not include chest + crafting table");
                 mc.gui.setScreen(LauuaClient.INSTANCE.createGui());
                 if(!(((GuiScreenAccessor)mc.gui).lauuacheats$screen() instanceof ClickGui))
                     throw new AssertionError("GUI did not open");
@@ -61,6 +65,18 @@ public final class ExplorerGameTest implements FabricClientGameTest {
             context.runOnClient(mc -> {
                 if(LauuaClient.INSTANCE.modules().find("SpawnerESP").orElseThrow().enabled())
                     throw new AssertionError("GUI click failed to toggle SpawnerESP");
+                mc.gui.setScreen(null);
+            });
+            // Live packet changes after initial scan must update markers without reconnecting.
+            world.getServer().runCommand("/setblock 1 100 0 minecraft:air");
+            world.getServer().runCommand("/setblock 4 100 0 minecraft:barrel");
+            context.waitTicks(140);
+            context.runOnClient(mc -> {
+                var live=LauuaClient.INSTANCE.scanner().visible();
+                if(live.stream().anyMatch(h->h.pos().equals(new BlockPos(1,100,0))))
+                    throw new AssertionError("stale chest marker after removal: " + live);
+                if(live.stream().noneMatch(h->h.pos().equals(new BlockPos(4,100,0))))
+                    throw new AssertionError("new barrel missing after live update: " + live);
             });
         }
     }

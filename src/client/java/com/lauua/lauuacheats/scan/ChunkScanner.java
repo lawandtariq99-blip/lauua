@@ -8,6 +8,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import java.util.*;
@@ -27,6 +28,7 @@ public final class ChunkScanner {
     private final Map<String,Double> weights = new HashMap<>();
     private volatile List<Highlight> visible = List.of();
     private LevelChunk current;
+    private Iterator<Map.Entry<BlockPos,BlockEntity>> blockEntities=Collections.emptyIterator();
     private String worldKey="";
     private int section, index, sweepIndex, sweepX=Integer.MIN_VALUE, sweepZ=Integer.MIN_VALUE;
     private int containers, spawners, utility, artificial;
@@ -52,7 +54,7 @@ public final class ChunkScanner {
         weights.put(id,value);
     }
     public Map<String,Double> weights() { return Map.copyOf(weights); }
-    public void reset() { current=null; queue.clear(); queued.clear(); visible=List.of(); worldKey=""; sweepIndex=0; }
+    public void reset() { current=null; blockEntities=Collections.emptyIterator(); queue.clear(); queued.clear(); visible=List.of(); worldKey=""; sweepIndex=0; }
     public List<Result> results(String key) { WorldIndex w=worlds.get(key); return w==null?List.of():w.ranked; }
     public List<Highlight> visible() { return visible; }
     public Stats stats(String key) {
@@ -67,7 +69,7 @@ public final class ChunkScanner {
     public void unloaded(ClientLevel level,LevelChunk chunk) {
         if(level!=Minecraft.getInstance().level) return;
         long id=key(chunk.getPos().x(),chunk.getPos().z());
-        if(current==chunk) current=null;
+        if(current==chunk) { current=null; blockEntities=Collections.emptyIterator(); }
         queue.removeIf(c->c==chunk); queued.remove(id);
         // Historical ranked leads survive unloading; only live ESP markers are discarded.
         rebuildVisible(Minecraft.getInstance());
@@ -109,19 +111,23 @@ public final class ChunkScanner {
             queued.remove(key(current.getPos().x(),current.getPos().z()));
             section=index=containers=spawners=utility=artificial=0; customBoost=0;
             found.clear(); foundPositions.clear();
-            // Block entities reveal storage/spawners in O(number of block entities) instead of
-            // a full chunk scan. Bound everything we keep; still count entities beyond marker cap.
-            for(var entry:current.getBlockEntities().entrySet()) {
-                BlockState state=entry.getValue().getBlockState();
+            // Block entities reveal storage/spawners without scanning every block in a section.
+            // Keep the iterator only while this chunk is current; abort if packets mutate it.
+            blockEntities=current.getBlockEntities().entrySet().iterator();
+        }
+        int cx=current.getPos().x(), cz=current.getPos().z();
+        if(mc.level.getChunkSource().getChunk(cx,cz,false)!=current) { current=null; blockEntities=Collections.emptyIterator(); return; }
+        long deadline=System.nanoTime()+1_500_000;
+        try {
+            for(int processed=0;processed<96 && blockEntities.hasNext() && System.nanoTime()<deadline;processed++) {
+                var entry=blockEntities.next(); BlockState state=entry.getValue().getBlockState();
                 if(state.is(Blocks.SPAWNER)) { spawners++; mark(entry.getKey(),Kind.SPAWNER); }
                 else if(isStorage(state)) { containers++; mark(entry.getKey(),Kind.STORAGE); customBoost+=weights.getOrDefault("minecraft:chest",1.5)-1.5; }
             }
-        }
-        int cx=current.getPos().x(), cz=current.getPos().z();
-        if(mc.level.getChunkSource().getChunk(cx,cz,false)!=current) { current=null; return; }
+        } catch(ConcurrentModificationException changed) { current=null; blockEntities=Collections.emptyIterator(); return; }
+        if(blockEntities.hasNext()) return; // never process an unbounded BE map on one tick
         LevelChunkSection[] sections=current.getSections();
-        int remaining=Math.clamp(blocksPerTick,256,8192);
-        long deadline=System.nanoTime()+1_500_000; // target ~1.5ms/tick maximum on normal hardware
+        int remaining=Math.clamp(blocksPerTick,256,8192); // target ~1.5ms/tick maximum on normal hardware
         while(section<sections.length && remaining>0 && System.nanoTime()<deadline) {
             LevelChunkSection s=sections[section];
             if(index==0 && (s.hasOnlyAir() || !((SectionStatesAccessor)s).lauuacheats$states().maybeHas(ChunkScanner::interesting))) { section++; continue; }
@@ -147,7 +153,7 @@ public final class ChunkScanner {
             w.results.put(key(cx,cz),r);
             if(w.results.size()>MAX_CHUNKS) w.results.remove(w.results.keySet().iterator().next());
             w.ranked=w.results.values().stream().sorted(Comparator.comparingDouble(Result::clusterScore).reversed()).toList();
-            current=null; rebuildVisible(mc);
+            current=null; blockEntities=Collections.emptyIterator(); rebuildVisible(mc);
         } else if(tick%10==0) rebuildVisible(mc);
     }
     private void enqueue(LevelChunk chunk) {
