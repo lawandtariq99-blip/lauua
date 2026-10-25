@@ -26,7 +26,7 @@ public final class LauuaClient implements ClientModInitializer {
     public static LauuaClient INSTANCE;
     public ModuleManager modules() { return modules; }
     public ChunkScanner scanner() { return scanner; }
-    public ClickGui createGui() { return createGui(); }
+    public ClickGui createGui() { return new ClickGui(modules,hud,scanner,()->{ try { profiles.save("default"); } catch (Exception e) { System.err.println("[Lauua] save: "+e); } }); }
     public static final String ID="lauuacheats", PREFIX=".lauua";
     private final ModuleManager modules=new ModuleManager();
     private final EventBus bus=new EventBus();
