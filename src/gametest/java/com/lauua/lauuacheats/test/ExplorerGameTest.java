@@ -13,7 +13,8 @@ import net.minecraft.core.BlockPos;
 public final class ExplorerGameTest implements FabricClientGameTest {
     @Override public void runTest(ClientGameTestContext context) {
         try(TestSingleplayerContext world=context.worldBuilder().create()) {
-            world.getServer().runCommand("/tp @a 0 102 0");
+            world.getServer().runCommand("/setblock 0 98 0 minecraft:stone");
+            world.getServer().runCommand("/tp @a 0 99 0");
             world.getServer().runCommand("/setblock 1 100 0 minecraft:chest");
             world.getServer().runCommand("/setblock 2 100 0 minecraft:crafting_table");
             world.getServer().runCommand("/setblock 3 100 0 minecraft:spawner");
