@@ -22,7 +22,7 @@ public final class ExplorerGameTest implements FabricClientGameTest {
     @Override public void runTest(ClientGameTestContext context) {
         context.getInput().resizeWindow(1600,900); // Typical desktop size; default gametest window is tiny.
         try(TestSingleplayerContext world=context.worldBuilder().create()) {
-            world.getServer().runCommand("/setblock 0 98 0 minecraft:stone");
+            world.getServer().runCommand("/setblock 0 98 -4 minecraft:stone");
             world.getServer().runCommand("/tp @a 0 99 -4 0 0");
             world.getServer().runCommand("/setblock 1 100 0 minecraft:chest");
             world.getServer().runCommand("/setblock 2 100 0 minecraft:crafting_table");
