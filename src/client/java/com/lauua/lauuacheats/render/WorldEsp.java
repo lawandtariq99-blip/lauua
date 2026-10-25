@@ -20,7 +20,8 @@ public final class WorldEsp {
     private Module module(String name) { return modules.find(name).filter(Module::enabled).orElse(null); }
     private static Object value(Module m,String name,Object fallback) {
         if(m==null) return fallback;
-        return m.settings().stream().filter(s->s.name.equals(name)).map(Setting::get).findFirst().orElse(fallback);
+        for(Setting<?> s:m.settings()) if(s.name.equals(name)) return s.get();
+        return fallback;
     }
     private static boolean flag(Module m,String name) { return Boolean.TRUE.equals(value(m,name,true)); }
     /** Colors follow the indexed storage subtype. Trapped chests get a distinct red tint. */

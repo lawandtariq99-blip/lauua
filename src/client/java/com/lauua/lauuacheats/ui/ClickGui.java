@@ -7,6 +7,7 @@ import com.lauua.lauuacheats.scan.ChunkScanner;
 import com.lauua.lauuacheats.settings.Setting;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -17,7 +18,7 @@ import java.util.*;
 /** Original dashboard design: compact sidebar, live search, cards, split detail pane and interactive settings. */
 public final class ClickGui extends Screen {
     private static final int BG=0xFF0A101B, SURFACE=0xFF121D2B, CARD=0xFF182738,
-        MINT=0xFF71E3CF, TEXT=0xFFE5F3F7, MUTED=0xFF91A8BA, PURPLE=0xFFD197F3;
+        MINT=0xFF71E3CF, TEXT=0xFFE5F3F7, MUTED=0xFF91A8BA, PURPLE=0xFFD197F3, BORDER=0xFF274253;
     private final ModuleManager manager;
     private final HudRegistry hud;
     private final ChunkScanner scanner;
@@ -29,9 +30,10 @@ public final class ClickGui extends Screen {
     private String query="";
     private int x,y,w,h,sidebar,detail,listScroll,settingsScroll;
     private int dragX,dragY;
-    private boolean moving,wasDown;
+    private boolean moving,wasDown,editingHud;
     private String movingHud;
     private Setting<?> sliding;
+    private Setting.KeybindSetting binding;
     private final List<Card> cards=new ArrayList<>();
     private final Map<Setting<?>,Rect> settingRows=new LinkedHashMap<>();
     private record Rect(int x,int y,int w,int h) {
@@ -58,7 +60,7 @@ public final class ClickGui extends Screen {
             onClick((int)event.x(),(int)event.y(),event.button()); return true;
         });
         ScreenMouseEvents.afterMouseScroll(this).register((screen,mx,my,horizontal,vertical,consumed)-> {
-            if(mx<x+sidebar || mx>x+w-detail) settingsScroll=Math.max(0,settingsScroll-(int)Math.signum(vertical)*2);
+            if((detail==0 && detailOpen) || (detail>0 && mx>x+w-detail)) settingsScroll=Math.max(0,settingsScroll-(int)Math.signum(vertical)*2);
             else listScroll=Math.max(0,listScroll-(int)Math.signum(vertical)*2);
             return true;
         });
@@ -87,10 +89,12 @@ public final class ClickGui extends Screen {
     }
     private void onClick(int mx,int my,int button) {
         if(new Rect(x+w-66,y+7,56,18).has(mx,my)) { save.run(); return; }
-        if(mx>=x+11 && mx<x+sidebar-10 && my>=y+101 && my<y+101+Module.Category.values().length*31) {
-            int idx=(my-y-101)/31; category=Module.Category.values()[idx]; listScroll=0; detailOpen=false; return;
+        if(new Rect(x+w-112,y+7,42,18).has(mx,my)) { editingHud=!editingHud; return; }
+        int navTop=y+72,navStep=20;
+        if(mx>=x+10 && mx<x+sidebar-8 && my>=navTop-2 && my<navTop+Module.Category.values().length*navStep-2) {
+            int idx=(my-navTop+2)/navStep; category=Module.Category.values()[idx]; listScroll=0; detailOpen=false; return;
         }
-        if(button==GLFW.GLFW_MOUSE_BUTTON_LEFT) for(HudRegistry.Element e:hud.all()) {
+        if(editingHud && button==GLFW.GLFW_MOUSE_BUTTON_LEFT) for(HudRegistry.Element e:hud.all()) {
             if(new Rect(e.x(),e.y(),14,11).has(mx,my)) { movingHud=e.name(); dragX=mx-e.x(); dragY=my-e.y(); return; }
         }
         if(detail==0 && detailOpen && new Rect(x+sidebar+12,y+38,86,25).has(mx,my)) {
@@ -104,13 +108,22 @@ public final class ClickGui extends Screen {
         }
         for(var row:settingRows.entrySet()) if(row.getValue().has(mx,my)) {
             Setting<?> setting=row.getKey();
-            if(button==GLFW.GLFW_MOUSE_BUTTON_RIGHT) setting.reset();
+            if(button==GLFW.GLFW_MOUSE_BUTTON_RIGHT) { setting.reset(); binding=null; }
+            else if(setting instanceof Setting.KeybindSetting key) binding=key;
             else if(setting instanceof Setting.BooleanSetting b) b.set(!b.get());
             else if(setting instanceof Setting.IntSlider || setting instanceof Setting.DoubleSlider) { sliding=setting; updateSlider(setting,mx); }
             else if(setting instanceof Setting.EnumSetting<?> e) cycle(e);
             else if(setting instanceof Setting.ColorSetting c) c.set(nextColor(c.get()));
             return;
         }
+    }
+    @Override public boolean keyPressed(KeyEvent event) {
+        if(binding!=null) {
+            binding.set(event.isEscape() || event.key()==GLFW.GLFW_KEY_BACKSPACE?-1:event.key());
+            binding=null;
+            return true;
+        }
+        return super.keyPressed(event);
     }
     private int nextColor(int value) {
         int[] palette={0xFF71E3CF,0xFFD197F3,0xFFF7B96E,0xFF76A9FF,0xFFFF7C9B};
@@ -132,52 +145,65 @@ public final class ClickGui extends Screen {
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta) {
         cards.clear(); settingRows.clear();
         g.fill(0,0,width,height,0xBB070D16);
-        rect(g,x-2,y-2,w+4,h+4,0x664A6D78);
+        rect(g,x-3,y-3,w+6,h+6,0xAA4C6E79);
+        rect(g,x-2,y-2,w+4,h+4,0xFF09121F);
         rect(g,x,y,w,h,BG);
         rect(g,x,y,w,32,0xFF142435);
         rect(g,x,y,3,32,MINT);
-        text(g,"◆ LAUUA",x+14,y+11,MINT);
-        text(g,"/  EXPLORER",x+83,y+11,TEXT);
-        text(g,"26.2 • CLIENT",x+w-183,y+11,MUTED);
-        rect(g,x+w-67,y+6,58,20,0xFF275C60);
+        rect(g,x+10,y+8,16,16,0xFF315D62);
+        text(g,"L",x+15,y+12,MINT);
+        text(g,"LAUUA",x+33,y+11,TEXT);
+        text(g,"/ EXPLORER",x+90,y+11,MUTED);
+        if(w>680) text(g,"26.2  /  CLIENT",x+w-241,y+11,MUTED);
+        rect(g,x+w-113,y+6,42,20,editingHud?0xFF337970:0xFF263C4D);
+        text(g,"HUD",x+w-104,y+12,editingHud?TEXT:MUTED);
+        rect(g,x+w-67,y+6,58,20,0xFF32736B);
         text(g,"SAVE",x+w-55,y+12,TEXT);
-        rect(g,x,y+32,sidebar,h-32,0xFF101C29);
-        text(g,"NAVIGATION",x+16,y+71,MUTED);
-        int cy=y+101;
+        rect(g,x,y+32,sidebar,h-32,0xFF111F2D);
+        rect(g,x+sidebar-1,y+32,1,h-32,BORDER);
+        text(g,"CATEGORIES",x+13,y+50,MUTED);
+        int cy=y+72;
         for(Module.Category cat:Module.Category.values()) {
             boolean active=cat==category;
-            if(active) { rect(g,x+7,cy-3,sidebar-15,26,0xFF1B3943); rect(g,x+7,cy-3,3,26,MINT); }
-            text(g,(cat==Module.Category.WORLD?"◈ ":"• ")+cat.name(),x+17,cy+4,active?MINT:MUTED);
-            cy+=31;
+            if(active) { rect(g,x+6,cy-2,sidebar-13,18,0xFF25424C); rect(g,x+6,cy-2,2,18,MINT); }
+            text(g,cat.name(),x+15,cy+3,active?MINT:MUTED);
+            cy+=20;
         }
-        rect(g,x+13,y+h-89,sidebar-27,66,0xFF162B37);
-        text(g,"BASEFINDER",x+20,y+h-81,MINT);
-        text(g,scanner.visible().size()+" live markers",x+20,y+h-62,TEXT);
-        text(g,"RSHIFT / CLOSE",x+20,y+h-46,MUTED);
+        rect(g,x+9,y+h-66,sidebar-18,53,0xFF1B3240);
+        rect(g,x+9,y+h-66,sidebar-18,1,0xFF396477);
+        text(g,"LIVE INDEX",x+16,y+h-57,MINT);
+        text(g,scanner.visible().size()+" markers",x+16,y+h-41,TEXT);
+        text(g,"RSHIFT to close",x+16,y+h-26,MUTED);
         int centerX=x+sidebar+10,centerW=w-sidebar-detail-17;
-        text(g,category==Module.Category.WORLD?"Basefinding & ESP":category.name()+" modules",centerX+9,y+39,TEXT);
-        rect(g,centerX+8,y+78,centerW-14,1,0xFF2B4455);
+        text(g,category==Module.Category.WORLD?"WORLD / BASEFINDING":category.name()+" / MODULES",centerX+9,y+39,TEXT);
+        rect(g,centerX+8,y+78,centerW-14,1,BORDER);
         var filtered=manager.all().stream().filter(m->m.category==category)
             .filter(m->m.name.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT))
                 || m.description.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT))).toList();
         int cols=centerW>=380?2:1,cardW=(centerW-17-(cols-1)*8)/cols;
-        int maxRows=Math.max(1,(h-115)/68);
+        int maxRows=Math.max(1,(h-126)/62);
         listScroll=Math.min(listScroll,Math.max(0,(filtered.size()+cols-1)/cols-maxRows));
         for(int i=listScroll*cols;i<filtered.size() && (detail>0 || !detailOpen);i++) {
-            int row=(i/cols)-listScroll,column=i%cols,top=y+91+row*68;
-            if(top+61>y+h-10) break;
+            int row=(i/cols)-listScroll,column=i%cols,top=y+88+row*62;
+            if(top+55>y+h-17) break;
             Module m=filtered.get(i); int left=centerX+8+column*(cardW+8);
             boolean focused=m==selected;
-            rect(g,left,top,cardW,60,focused?0xFF213847:CARD);
-            rect(g,left,top,3,60,m.enabled()?MINT:0xFF395367);
-            text(g,shorten(m.name,cardW<180?18:24),left+11,top+10,TEXT);
-            text(g,shorten(m.description,cardW<180?22:30),left+11,top+28,MUTED);
-            text(g,"TIER " + m.tier.name(),left+11,top+45,m.tier==Module.Tier.D?0xFFFFA9B5:PURPLE);
-            int toggle=m.enabled()?0xFF2B786F:0xFF304353;
-            rect(g,left+cardW-42,top+10,34,16,toggle);
-            rect(g,left+cardW-(m.enabled()?25:39),top+12,12,12,m.enabled()?MINT:MUTED);
-            cards.add(new Card(m,new Rect(left,top,cardW,60)));
+            rect(g,left,top,cardW,56,focused?0xFF25404E:CARD);
+            rect(g,left,top,2,56,m.enabled()?MINT:0xFF395367);
+            rect(g,left+5,top+55,cardW-10,1,BORDER);
+            text(g,fit(m.name,cardW-61),left+10,top+8,TEXT);
+            text(g,fit(m.description,cardW-18),left+10,top+24,MUTED);
+            text(g,m.enabled()?"ACTIVE":"PAUSED",left+10,top+42,m.enabled()?MINT:MUTED);
+            text(g,"/ " + m.tier.name(),left+69,top+42,m.tier==Module.Tier.D?0xFFFFA9B5:PURPLE);
+            rect(g,left+cardW-44,top+8,34,17,m.enabled()?0xFF32796E:0xFF304353);
+            rect(g,left+cardW-(m.enabled()?26:41),top+10,13,13,m.enabled()?MINT:MUTED);
+            cards.add(new Card(m,new Rect(left,top,cardW,56)));
         }
+        if(filtered.isEmpty() && !detailOpen) {
+            text(g,"NO MATCHING MODULES",centerX+12,y+112,MUTED);
+            text(g,"Try a different category or search.",centerX+12,y+129,MUTED);
+        }
+        if(!detailOpen && detail==0) text(g,"CLICK CARD FOR SETTINGS  /  SCROLL FOR MORE",centerX+8,y+h-15,MUTED);
         if(detail>0 || detailOpen) {
         int panelX=detail==0?x+sidebar+4:x+w-detail+2;
         int panelW=detail==0?w-sidebar-13:detail-11;
@@ -188,29 +214,43 @@ public final class ClickGui extends Screen {
         } else rect(g,panelX-2,y+32,1,h-32,0xFF254558);
         text(g,"INSPECTOR",panelX+(detail==0?114:13),y+47,MUTED);
         if(selected!=null) {
-            text(g,shorten(selected.name,26),panelX+13,y+72,TEXT);
-            text(g,"TIER " + selected.tier.name() + (selected.enabled()?"    ACTIVE":"    PAUSED"),panelX+13,y+91,selected.enabled()?MINT:PURPLE);
-            text(g,shorten(selected.note,29),panelX+13,y+111,MUTED);
-            rect(g,panelX+12,y+133,panelW-18,1,0xFF304657);
-            text(g,"SETTINGS   •   RIGHT CLICK TO RESET",panelX+13,y+144,MUTED);
+            boolean compact=h<390;
+            text(g,fit(selected.name,panelW-24),panelX+13,y+72,TEXT);
+            text(g,(selected.enabled()?"ACTIVE  /  ":"PAUSED  /  ")+"TIER " + selected.tier.name(),panelX+13,y+89,selected.enabled()?MINT:PURPLE);
+            text(g,fit(selected.note,panelW-25),panelX+13,y+105,MUTED);
+            int labelY=compact?y+123:y+144,rowsY=compact?y+142:y+170,rowH=compact?36:52;
+            rect(g,panelX+12,labelY-10,panelW-18,1,BORDER);
+            text(g,"SETTINGS  /  RIGHT-CLICK TO RESET",panelX+13,labelY,MUTED);
             List<Setting<?>> settings=selected.settings();
-            int max=Math.max(1,(h-196)/52);
+            int max=Math.max(1,(h-(rowsY-y)-14)/rowH);
             settingsScroll=Math.min(settingsScroll,Math.max(0,settings.size()-max));
             for(int i=settingsScroll;i<settings.size();i++) {
-                int ry=y+170+(i-settingsScroll)*52;
-                if(ry+45>y+h-12) break;
+                int ry=rowsY+(i-settingsScroll)*rowH;
+                if(ry+rowH-3>y+h-11) break;
                 Setting<?> s=settings.get(i);
-                rect(g,panelX+10,ry,panelW-14,46,SURFACE);
-                text(g,shorten(s.name,25),panelX+18,ry+6,TEXT);
-                text(g,shorten(String.valueOf(s.get()),20),panelX+18,ry+22,s instanceof Setting.BooleanSetting b && b.get()?MINT:MUTED);
-                if(s instanceof Setting.IntSlider slider) progress(g,panelX+18,ry+39,panelW-32,(slider.get()-slider.min)/(double)(slider.max-slider.min));
-                if(s instanceof Setting.DoubleSlider slider) progress(g,panelX+18,ry+39,panelW-32,(slider.get()-slider.min)/(slider.max-slider.min));
-                settingRows.put(s,new Rect(panelX+10,ry,panelW-14,46));
+                rect(g,panelX+10,ry,panelW-14,rowH-4,SURFACE);
+                text(g,fit(s.name,panelW-31),panelX+17,ry+4,TEXT);
+                String value=s==binding?"PRESS KEY / ESC TO CLEAR":s instanceof Setting.KeybindSetting k
+                    ? k.get()==-1?"UNBOUND / CLICK TO BIND":"KEY " + k.get()
+                    : s instanceof Setting.ColorSetting c?String.format("#%06X",c.get()&0xffffff):String.valueOf(s.get());
+                text(g,fit(value,panelW-38),panelX+17,ry+(compact?17:23),
+                    s instanceof Setting.BooleanSetting b && b.get()?MINT:MUTED);
+                if(s instanceof Setting.ColorSetting c) rect(g,panelX+panelW-31,ry+18,11,10,c.get());
+                if(s instanceof Setting.IntSlider slider) progress(g,panelX+17,ry+rowH-9,panelW-32,(slider.get()-slider.min)/(double)(slider.max-slider.min));
+                if(s instanceof Setting.DoubleSlider slider) progress(g,panelX+17,ry+rowH-9,panelW-32,(slider.get()-slider.min)/(slider.max-slider.min));
+                settingRows.put(s,new Rect(panelX+10,ry,panelW-14,rowH-4));
             }
+            if(settings.size()>max) text(g,(settingsScroll+1)+"-"+Math.min(settings.size(),settingsScroll+max)+" / "+settings.size(),
+                panelX+panelW-63,labelY,MINT);
         } else text(g,"Select a module",panelX+13,y+73,MUTED);
         }
         super.extractRenderState(g,mx,my,delta); // Search field is the only vanilla widget.
-        for(HudRegistry.Element e:hud.all()) { rect(g,e.x(),e.y(),14,11,0xBB407E86); text(g,"::",e.x()+2,e.y()+1,TEXT); }
+        if(editingHud) for(HudRegistry.Element e:hud.all()) {
+            // HUD handles are intentionally hidden outside edit mode: on small GUI scales
+            // they overlap navigation and may obscure actionable module controls.
+            rect(g,e.x(),e.y(),Math.min(95,font.width(e.name())+15),12,0xEE30625F);
+            text(g,"::"+e.name(),e.x()+2,e.y()+2,TEXT);
+        }
     }
     /** Test hook for actual client input: coordinates come from the last rendered card layout. */
     public int[] moduleTogglePoint(String name) {
@@ -224,6 +264,11 @@ public final class ClickGui extends Screen {
     }
     private static void rect(GuiGraphicsExtractor g,int x,int y,int w,int h,int color) { g.fill(x,y,x+Math.max(1,w),y+Math.max(1,h),color); }
     private void text(GuiGraphicsExtractor g,String value,int x,int y,int color) { g.text(font,value,x,y,color); }
+    private String fit(String s,int maxWidth) {
+        if(font.width(s)<=maxWidth) return s;
+        while(!s.isEmpty() && font.width(s+"…")>maxWidth) s=s.substring(0,s.length()-1);
+        return s+"…";
+    }
     private static String shorten(String s,int limit) { return s.length()>limit?s.substring(0,Math.max(0,limit-1))+"…":s; }
     @Override public boolean isPauseScreen() { return false; }
 }
