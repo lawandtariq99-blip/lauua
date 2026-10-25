@@ -32,6 +32,17 @@ jobs:
           echo '```text' >> "$GITHUB_STEP_SUMMARY"
           tail -n 250 build-output.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PYLOG'
+          import pathlib
+          lines=pathlib.Path('build-output.txt').read_text(errors='replace').splitlines()
+          interesting=[]
+          for i,line in enumerate(lines):
+              if ' error: ' in line:
+                  interesting.extend(lines[i:i+6])
+          details='\n'.join(interesting)[:12000]
+          details=details.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+          print('::error title=Compiler details::'+details)
+          PYLOG
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
