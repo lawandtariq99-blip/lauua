@@ -57,7 +57,7 @@ public final class ChunkScanner {
         weights.put(id,value);
     }
     public Map<String,Double> weights() { return Map.copyOf(weights); }
-    public void reset() { current=null; blockEntities=Collections.emptyIterator(); queue.clear(); queued.clear(); visible=List.of(); worldKey=""; sweepIndex=0; }
+    public void reset() { current=null; blockEntities=Collections.emptyIterator(); queue.clear(); queued.clear(); visible=List.of(); worlds.clear(); worldKey=""; sweepIndex=0; sweepX=sweepZ=Integer.MIN_VALUE; }
     public List<Result> results(String key) { WorldIndex w=worlds.get(key); return w==null?List.of():w.ranked; }
     public List<Highlight> visible() { return visible; }
     public Stats stats(String key) {
@@ -74,8 +74,10 @@ public final class ChunkScanner {
         long id=key(chunk.getPos().x(),chunk.getPos().z());
         if(current==chunk) { current=null; blockEntities=Collections.emptyIterator(); }
         queue.removeIf(c->c==chunk); queued.remove(id);
-        // Historical ranked leads survive unloading; only live ESP markers are discarded.
-        rebuildVisible(Minecraft.getInstance());
+        // Do not wait for the source to finish removing the chunk: unload callbacks may
+        // fire while it is still queryable. Historical leads survive, live ESP does not.
+        visible=visible.stream().filter(h->(h.pos().getX()>>4)!=chunk.getPos().x()
+            || (h.pos().getZ()>>4)!=chunk.getPos().z()).toList();
     }
     public void tick(Minecraft mc,String key) {
         if(mc.player==null || mc.level==null) { reset(); return; }

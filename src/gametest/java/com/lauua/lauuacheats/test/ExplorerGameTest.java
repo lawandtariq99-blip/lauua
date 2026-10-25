@@ -98,6 +98,8 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                 Module storage=LauuaClient.INSTANCE.modules().find("StorageESP").orElseThrow();
                 Setting<?> barrels=storage.settings().stream().filter(s->s.name.equals("Barrels")).findFirst().orElseThrow();
                 if(!Boolean.FALSE.equals(barrels.get())) throw new AssertionError("Barrels filter setting not changed by GUI");
+                if(WorldEsp.storageEnabled(storage,ChunkScanner.StorageType.BARREL))
+                    throw new AssertionError("Barrel visibility filter not applied to renderer/radar");
                 storage.setEnabled(false);
                 if(!com.lauua.lauuacheats.modules.WorldModules.scanning(LauuaClient.INSTANCE.modules()))
                     throw new AssertionError("scanner stopped while other scanners are enabled");
@@ -115,6 +117,10 @@ public final class ExplorerGameTest implements FabricClientGameTest {
                 if(live.stream().noneMatch(h->h.pos().equals(new BlockPos(4,100,0))
                     && h.storageType()==ChunkScanner.StorageType.BARREL))
                     throw new AssertionError("new typed barrel missing after live update: " + live);
+                var chunk=mc.level.getChunkSource().getChunk(0,0,false);
+                LauuaClient.INSTANCE.scanner().unloaded(mc.level,chunk);
+                if(LauuaClient.INSTANCE.scanner().visible().stream().anyMatch(h->(h.pos().getX()>>4)==0 && (h.pos().getZ()>>4)==0))
+                    throw new AssertionError("unloaded chunk leaked live ESP markers");
             });
         }
     }

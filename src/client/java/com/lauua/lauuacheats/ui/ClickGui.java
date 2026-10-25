@@ -50,7 +50,8 @@ public final class ClickGui extends Screen {
         w=Math.min(940,width-22); h=Math.min(555,height-24);
         x=Math.max(11,(width-w)/2); y=Math.max(12,(height-h)/2);
         sidebar=w<690?112:160; detail=w<690?0:244;
-        search=new EditBox(font,x+sidebar+19,y+51,Math.max(90,w-sidebar-detail-44),19,Component.literal("Search modules"));
+        search=new EditBox(font,x+sidebar+22,y+55,Math.max(90,w-sidebar-detail-46),18,Component.literal("Search modules"));
+        search.setBordered(false); search.setMaxLength(60); search.setTextColor(TEXT);
         search.setValue(query);
         search.setHint(Component.literal("Search modules…"));
         search.setResponder(value->{ query=value; listScroll=0; });
@@ -76,7 +77,7 @@ public final class ClickGui extends Screen {
         if(moving) {
             int nx=Math.clamp(p[0]-dragX,2,Math.max(2,width-w-2));
             int ny=Math.clamp(p[1]-dragY,2,Math.max(2,height-h-2));
-            if(nx!=x || ny!=y) { x=nx; y=ny; search.setX(x+sidebar+19); search.setY(y+51); }
+            if(nx!=x || ny!=y) { x=nx; y=ny; search.setX(x+sidebar+22); search.setY(y+55); }
         }
         if(sliding!=null) updateSlider(sliding,p[0]);
         if(movingHud!=null) hud.move(movingHud,Math.max(0,p[0]-dragX),Math.max(0,p[1]-dragY));
@@ -176,6 +177,8 @@ public final class ClickGui extends Screen {
         text(g,"RSHIFT to close",x+16,y+h-26,MUTED);
         int centerX=x+sidebar+10,centerW=w-sidebar-detail-17;
         text(g,category==Module.Category.WORLD?"WORLD / BASEFINDING":category.name()+" / MODULES",centerX+9,y+39,TEXT);
+        rect(g,centerX+8,y+49,centerW-14,25,BORDER);
+        rect(g,centerX+9,y+50,centerW-16,23,SURFACE);
         rect(g,centerX+8,y+78,centerW-14,1,BORDER);
         var filtered=manager.all().stream().filter(m->m.category==category)
             .filter(m->m.name.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT))
@@ -230,11 +233,18 @@ public final class ClickGui extends Screen {
                 Setting<?> s=settings.get(i);
                 rect(g,panelX+10,ry,panelW-14,rowH-4,SURFACE);
                 text(g,fit(s.name,panelW-31),panelX+17,ry+4,TEXT);
-                String value=s==binding?"PRESS KEY / ESC TO CLEAR":s instanceof Setting.KeybindSetting k
+                String value=s==binding?"PRESS KEY / ESC TO CLEAR":s instanceof Setting.BooleanSetting b
+                    ? b.get()?"ON":"OFF":s instanceof Setting.BlockList || s instanceof Setting.ItemList || s instanceof Setting.StringSetting
+                    ? "EDIT IN PROFILE JSON":s instanceof Setting.KeybindSetting k
                     ? k.get()==-1?"UNBOUND / CLICK TO BIND":"KEY " + k.get()
                     : s instanceof Setting.ColorSetting c?String.format("#%06X",c.get()&0xffffff):String.valueOf(s.get());
                 text(g,fit(value,panelW-38),panelX+17,ry+(compact?17:23),
                     s instanceof Setting.BooleanSetting b && b.get()?MINT:MUTED);
+                if(s instanceof Setting.BooleanSetting b) {
+                    int right=panelX+panelW-48;
+                    rect(g,right,ry+9,25,13,b.get()?0xFF32796E:0xFF304353);
+                    rect(g,right+(b.get()?13:2),ry+11,9,9,b.get()?MINT:MUTED);
+                }
                 if(s instanceof Setting.ColorSetting c) rect(g,panelX+panelW-31,ry+18,11,10,c.get());
                 if(s instanceof Setting.IntSlider slider) progress(g,panelX+17,ry+rowH-9,panelW-32,(slider.get()-slider.min)/(double)(slider.max-slider.min));
                 if(s instanceof Setting.DoubleSlider slider) progress(g,panelX+17,ry+rowH-9,panelW-32,(slider.get()-slider.min)/(slider.max-slider.min));
