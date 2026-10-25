@@ -46,7 +46,7 @@ public final class LauuaClient implements ClientModInitializer {
         WorldModules.register(modules,scanner,hud,()->world);
         try { profiles.load("default"); } catch (Exception e) { System.err.println("[Lauua] profile load failed: " + e); }
         hud.register(modules);
-        keys.bind(GLFW.GLFW_KEY_RIGHT_SHIFT,()-> Minecraft.getInstance().setScreen(new ClickGui(modules)));
+        keys.bind(GLFW.GLFW_KEY_RIGHT_SHIFT,()-> Minecraft.getInstance().setScreen(new ClickGui(modules,hud)));
         keys.bind(GLFW.GLFW_KEY_END,()-> { for(Module m:modules.all()) m.setEnabled(false); rotations.clear(); macros.abort(); });
         keys.bind(GLFW.GLFW_KEY_INSERT,()->command("waypoint Quick"));
         keys.bind(GLFW.GLFW_KEY_F9,()->macros.start("anchor"));
@@ -73,7 +73,7 @@ public final class LauuaClient implements ClientModInitializer {
         String[] args=input.split("\\s+",3);
         try {
             switch(args[0].toLowerCase(Locale.ROOT)) {
-                case "gui" -> mc.setScreen(new ClickGui(modules));
+                case "gui" -> mc.setScreen(new ClickGui(modules,hud));
                 case "panic" -> { for(Module m:modules.all()) m.setEnabled(false); rotations.clear(); macros.abort(); reply("Modules disabled"); }
                 case "toggle" -> { if(args.length<2) throw new IllegalArgumentException("toggle <module>"); Module m=modules.find(args[1]).orElseThrow(); m.toggle(); reply(m.name+" " + (m.enabled()?"ON":"OFF")); }
                 case "save" -> { profiles.save(args.length>1?args[1]:"default"); reply("Profile saved"); }

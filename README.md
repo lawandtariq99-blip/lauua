@@ -19,7 +19,7 @@ Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`
 | Unbound | Module keybinds default to -1; set via profile JSON |
 | Right click settings row | Reset setting to default |
 
-Chat messages beginning `.lauua` are intercepted client-side and not sent to the server. Commands: `.lauua gui`, `.lauua panic`, `.lauua toggle <module>`, `.lauua save [profile]`, `.lauua load [profile]`, `.lauua macro anchor`, `.lauua waypoint <name>`, `.lauua export`, `.lauua scan`, `.lauua weight minecraft:chest 7`, `.lauua hud "Coordinates" 20,30`. For module names containing spaces, profile JSON/GUI is easier than the `toggle` command. Profiles are one JSON file each under `config/lauuacheats/profiles/`; coordinates and exports are under `config/lauuacheats/waypoints/`. All lists and queues are bounded. Settings change at runtime.
+Chat messages beginning `.lauua` are intercepted client-side and not sent to the server. Commands: `.lauua gui`, `.lauua panic`, `.lauua toggle <module>`, `.lauua save [profile]`, `.lauua load [profile]`, `.lauua macro anchor`, `.lauua waypoint <name>`, `.lauua export`, `.lauua scan`, `.lauua weight minecraft:chest 7`, `.lauua hud Coordinates 20,30`. For module names containing spaces, profile JSON/GUI is easier than the `toggle` command. Profiles are one JSON file each under `config/lauuacheats/profiles/`; coordinates and exports are under `config/lauuacheats/waypoints/`. All lists and queues are bounded. Settings change at runtime.
 
 ## Modules
 
@@ -43,7 +43,7 @@ Tiers are **descriptive labels**, not a guarantee of server compatibility or saf
 | CoordLogger | A | Manual chat/file/list logging |
 | WaypointExport | A | CSV, JSON, tentative Xaero format export |
 
-The ClickGUI has category collapsing, live search, module toggles, tier labels and basic setting toggles/stepping. Non-numeric complex settings (lists, colors, keybinds and strings) currently need JSON editing and a profile reload. HUD registry renders coordinates, reach and active modules, and has configurable background/opacity/shadow fields; use the chat HUD move command to reposition (mouse drag editing is **not implemented**).
+The ClickGUI has category collapsing, live search, module toggles, tier labels and basic setting toggles/stepping. Non-numeric complex settings (lists, colors, keybinds and strings) currently need JSON editing and a profile reload. HUD registry renders coordinates, reach and active modules, and has configurable background/opacity/shadow fields; drag the blue `::` handles in the ClickGUI to reposition, or use the chat HUD move command.
 
 The macro engine supports place, break, use, hotbar switching, attack, look, chat and wait steps, delays/loops and release cancellation; actions are queued through the shared rotation manager. Macro definitions are currently Java registrations rather than an editor or persistent macro files. Rotation modes are instant/linear/smoothed, but Vanilla Mode forces immediate ordering. The explosion damage predictor uses distance without armor/obstruction for self damage, and line of sight for target damage; **it is not a reliable PvP safety guarantee**.
 
@@ -59,8 +59,8 @@ Edit the sign and inspect what is sent/retained; expected raw key is `key.lauuac
 
 ### Scanner scope and safety
 
-The scanner reads at most 256 block states per client tick and retains at most 128 results per world, 16 world keys, and bounded logger entries. It drops work on disconnect/dimension change/chunk unload. A true fresh-versus-modified determination would require the **server seed, generator settings, biome and exact worldgen version** to create a vanilla reference and compare *ordered raw palette entries plus packed bit-storage*. None of these are available for most remote servers. This prototype therefore only ranks unusual block distributions and explicitly does not assert fresh generation. The Xaero format is an approximation; check it with your Xaero version before importing.
+An exact palette/packed-storage comparator is provided for use with a trusted baseline, but no vanilla worldgen baseline generator is implemented. The scanner reads at most 256 block states per client tick and retains at most 128 results per world, 16 world keys, and bounded logger entries. It drops work on disconnect/dimension change/chunk unload. A true fresh-versus-modified determination would require the **server seed, generator settings, biome and exact worldgen version** to create a vanilla reference and compare *ordered raw palette entries plus packed bit-storage*. None of these are available for most remote servers. This prototype therefore only ranks unusual block distributions and explicitly does not assert fresh generation. The Xaero format is an approximation; check it with your Xaero version before importing.
 
 ### Not implemented
 
-Stage 8 was explicitly conditional on stages 0–7 building clean; the build cannot run in this sandbox, so none of the long stage-8 wishlist was attempted. Stage 7's exact vanilla-worldgen palette comparison and world-space ESP, stage 2's HUD mouse-drag editor/complex settings editors, stage 3's verified sign/anvil behavior, and several advanced combat features are likewise incomplete. Do not mistake the module table for a claim that all requested functions are complete.
+Stage 8 was explicitly conditional on stages 0–7 building clean; the build cannot run in this sandbox, so none of the long stage-8 wishlist was attempted. Stage 7's exact vanilla-worldgen palette comparison and world-space ESP, stage 2's complex settings editors, stage 3's verified sign/anvil behavior, and several advanced combat features are likewise incomplete. Do not mistake the module table for a claim that all requested functions are complete.

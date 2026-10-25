@@ -1,6 +1,7 @@
 package com.lauua.lauuacheats.ui;
 
 import com.lauua.lauuacheats.core.*;
+import com.lauua.lauuacheats.hud.HudRegistry;
 import com.lauua.lauuacheats.settings.Setting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -14,13 +15,15 @@ import java.util.*;
 /** Widget-based GUI: category panels, live filtering, selected module settings and header dragging. */
 public final class ClickGui extends Screen {
     private final ModuleManager manager;
+    private final HudRegistry hud;
+    private String movingHud;
     private final Set<Module.Category> closed = EnumSet.noneOf(Module.Category.class);
     private String query = "";
     private Module selected;
     private int originX = 20, originY = 28, offsetX, offsetY;
     private boolean dragging, previousLeft, previousRight;
     private final Map<Setting<?>, int[]> rows = new HashMap<>();
-    public ClickGui(ModuleManager manager) { super(Component.literal("Lauua Cheats")); this.manager=manager; }
+    public ClickGui(ModuleManager manager, HudRegistry hud) { super(Component.literal("Lauua Cheats")); this.manager=manager; this.hud=hud; }
     @Override protected void init() { rebuild(); }
     private void rebuild() {
         this.clearWidgets(); rows.clear();
@@ -67,10 +70,16 @@ public final class ClickGui extends Screen {
         int mx=(int)(x[0]*width/mc.getWindow().getScreenWidth()), my=(int)(y[0]*height/mc.getWindow().getScreenHeight());
         boolean left=GLFW.glfwGetMouseButton(window,GLFW.GLFW_MOUSE_BUTTON_LEFT)==GLFW.GLFW_PRESS;
         boolean right=GLFW.glfwGetMouseButton(window,GLFW.GLFW_MOUSE_BUTTON_RIGHT)==GLFW.GLFW_PRESS;
-        if (left && !previousLeft && mx>=originX && mx<originX+340 && my>=originY-22 && my<originY) {
+        if (left && !previousLeft) for (HudRegistry.Element element : hud.all()) {
+            if (mx>=element.x() && mx<element.x()+14 && my>=element.y() && my<element.y()+11) {
+                movingHud=element.name(); offsetX=mx-element.x(); offsetY=my-element.y(); break;
+            }
+        }
+        if (left && !previousLeft && movingHud==null && mx>=originX && mx<originX+340 && my>=originY-22 && my<originY) {
             dragging=true; offsetX=mx-originX; offsetY=my-originY;
         }
-        if (!left) dragging=false;
+        if (!left) { dragging=false; movingHud=null; }
+        if (movingHud!=null) hud.move(movingHud, Math.max(0,mx-offsetX),Math.max(0,my-offsetY));
         if (dragging) { originX=mx-offsetX; originY=my-offsetY; rebuild(); }
         if (right && !previousRight) for (var entry : rows.entrySet()) {
             int[] r=entry.getValue();
@@ -83,6 +92,10 @@ public final class ClickGui extends Screen {
         graphics.text(font, "Lauua Cheats  •  drag here", originX+5, originY-17, 0xFFFFFFFF);
         if (selected != null) graphics.text(font, selected.note, originX+168, originY-18, 0xFFAAAAAA);
         super.extractRenderState(graphics,mx,my,delta);
+        for (HudRegistry.Element e : hud.all()) {
+            graphics.fill(e.x(),e.y(),e.x()+14,e.y()+11,0x99628BFF);
+            graphics.text(font,"::",e.x()+2,e.y()+1,0xFFFFFFFF);
+        }
     }
     @Override public boolean isPauseScreen() { return false; }
 }
