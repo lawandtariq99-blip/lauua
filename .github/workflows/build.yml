@@ -71,8 +71,13 @@ jobs:
           find . -path '*/logs/latest.log' -maxdepth 6 -print -exec tail -n 90 {} \; 2>/dev/null || true
       - name: collect tested GUI screenshot
         run: |
-          shot=$(find . -type f -name 'lauua-explorer-26_2.png' -print -quit)
-          if [ -n "$shot" ]; then cp "$shot" build/libs/lauua-gui-preview.png; fi
+          shot=$(find . -type f -name 'lauua-gui-preview.png' -print -quit)
+          if [ -n "$shot" ]; then
+            echo "Screenshot from virtual client: $shot"
+            if [ "$shot" != './build/libs/lauua-gui-preview.png' ]; then cp "$shot" build/libs/lauua-gui-preview.png; fi
+          else
+            echo "::warning title=GUI screenshot missing::No screenshot saved by client gametest"
+          fi
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -81,7 +86,7 @@ jobs:
 
   publish-preview:
     # Direct JAR alternative when Chrome blocks the Actions artifact ZIP.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f86872cf-lauua' && contains(github.event.head_commit.message, '[release]')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f86872cf-lauua' && (contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[preview]'))
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -100,7 +105,14 @@ jobs:
       - name: publish experimental release
         env:
           GH_TOKEN: ${{ github.token }}
+          PREVIEW_ONLY: ${{ contains(github.event.head_commit.message, '[preview]') }}
         run: |
+          if [ "$PREVIEW_ONLY" = 'true' ]; then
+            test -s artifact/lauua-gui-preview.png
+            gh release upload lauuacheats-v1.1.1-experimental artifact/lauua-gui-preview.png \
+              --repo "${{ github.repository }}" --clobber
+            exit 0
+          fi
           assets=(artifact/lauuacheats-1.1.1.jar artifact/SHA256SUMS)
           if [ -s artifact/lauua-gui-preview.png ]; then assets+=(artifact/lauua-gui-preview.png); fi
           gh release create lauuacheats-v1.1.1-experimental "${assets[@]}" \
