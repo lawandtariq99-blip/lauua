@@ -11,6 +11,7 @@ import java.util.*;
 
 /** Basefinding defaults ON: scan loaded chunks immediately; ESP and radar show actual block positions. */
 public final class WorldModules {
+    public enum EspStyle { FILL, OUTLINE, BOTH }
     private WorldModules() { }
     public static void register(ModuleManager manager,ChunkScanner scanner,HudRegistry hud,java.util.function.Supplier<String> world) {
         manager.register(new Module("NewChunks","Heuristic leads; no unprovable 'fresh' claims",Module.Category.WORLD,-1,false,Module.Tier.C,"Remote seed required for exact worldgen comparison") {});
@@ -30,7 +31,24 @@ public final class WorldModules {
             }
         });
         manager.register(new Module("SpawnerESP","3D boxes + radar for loaded spawners",Module.Category.WORLD,-1,true,Module.Tier.B,"Enabled by default; natural spawners aren't bases") {});
-        manager.register(new Module("StorageESP","3D boxes + radar for loaded storage",Module.Category.WORLD,-1,true,Module.Tier.B,"Enabled by default; villages also contain chests") {});
+        manager.register(new Module("StorageESP","Colored 3D storage markers",Module.Category.RENDER,-1,true,Module.Tier.B,"Loaded chunks only; not x-ray for unseen chunks") {
+            final BooleanSetting chests=add(new BooleanSetting("Chests",true));
+            final BooleanSetting barrels=add(new BooleanSetting("Barrels",true));
+            final BooleanSetting shulkers=add(new BooleanSetting("Shulkers",true));
+            final BooleanSetting machines=add(new BooleanSetting("Hoppers & furnaces",true));
+            final IntSlider range=add(new IntSlider("Range",96,16,192));
+            final IntSlider opacity=add(new IntSlider("Opacity",100,12,220));
+            final EnumSetting<EspStyle> style=add(new EnumSetting<>("Style",EspStyle.BOTH,EspStyle.class));
+            final ColorSetting chestColor=add(new ColorSetting("Chest color",0xFF71E3CF));
+            final ColorSetting barrelColor=add(new ColorSetting("Barrel color",0xFFFFBD73));
+            final ColorSetting otherColor=add(new ColorSetting("Other color",0xFFB698FA));
+        });
+        manager.register(new Module("OreESP","Rare ore boxes in loaded chunks",Module.Category.RENDER,-1,false,Module.Tier.B,"Diamond, emerald & ancient debris; bounded loaded-chunk index") {
+            final IntSlider range=add(new IntSlider("Range",64,16,192));
+            final ColorSetting color=add(new ColorSetting("Color",0xFF76B7FF));
+        });
+        manager.register(new Module("PortalESP","Mark loaded portal blocks",Module.Category.RENDER,-1,false,Module.Tier.B,"Nether portals and End portal frames") {});
+        manager.register(new Module("UtilityESP","Crafting & utility block markers",Module.Category.RENDER,-1,false,Module.Tier.B,"Loaded workstations only") {});
         manager.register(new Module("CoordLogger","Manual coordinate journal",Module.Category.WORLD,-1,false,Module.Tier.A,"Insert or .lauua waypoint") {});
         manager.register(new Module("WaypointExport","CSV/JSON/Xaero export",Module.Category.WORLD,-1,false,Module.Tier.A,"Use .lauua export") {});
         hud.put("World Leads",5,47,()-> {
@@ -42,7 +60,7 @@ public final class WorldModules {
             (graphics,delta)->drawRadar(graphics,manager,scanner));
     }
     public static boolean scanning(ModuleManager manager) {
-        return List.of("NewChunks","ClusterFinder","SpawnerESP","StorageESP").stream()
+        return List.of("ClusterFinder","SpawnerESP","StorageESP","OreESP","PortalESP","UtilityESP").stream()
             .anyMatch(n->manager.find(n).map(Module::enabled).orElse(false));
     }
     private static void drawRadar(GuiGraphicsExtractor g,ModuleManager modules,ChunkScanner scanner) {
@@ -69,9 +87,15 @@ public final class WorldModules {
                 case STORAGE -> 0xFF65DFD4;
                 case UTILITY -> 0xFFFFBF71;
                 case ARTIFICIAL -> 0xFFE18F64;
+                case ORE -> 0xFF76B7FF;
+                case PORTAL -> 0xFFAD85F6;
             };
             if(mark.kind()==ChunkScanner.Kind.SPAWNER && !modules.find("SpawnerESP").map(Module::enabled).orElse(false)) continue;
             if(mark.kind()==ChunkScanner.Kind.STORAGE && !modules.find("StorageESP").map(Module::enabled).orElse(false)) continue;
+            if(mark.kind()==ChunkScanner.Kind.ORE && !modules.find("OreESP").map(Module::enabled).orElse(false)) continue;
+            if(mark.kind()==ChunkScanner.Kind.PORTAL && !modules.find("PortalESP").map(Module::enabled).orElse(false)) continue;
+            if(mark.kind()==ChunkScanner.Kind.UTILITY && !modules.find("UtilityESP").map(Module::enabled).orElse(false)
+                && !modules.find("ClusterFinder").map(Module::enabled).orElse(false)) continue;
             g.fill(mx-1,mz-1,mx+2,mz+2,color);
         }
         g.fill(x+49,y+57,x+54,y+62,0xFFFFFFFF);

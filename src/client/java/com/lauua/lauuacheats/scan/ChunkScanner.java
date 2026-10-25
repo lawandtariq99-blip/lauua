@@ -15,12 +15,15 @@ import java.util.*;
 
 /** Event-driven bounded base-finding index. All chunk reads occur on the client tick, never in render callbacks. */
 public final class ChunkScanner {
-    public enum Kind { STORAGE, SPAWNER, UTILITY, ARTIFICIAL }
-    public record Highlight(BlockPos pos, Kind kind) { }
+    public enum Kind { STORAGE, SPAWNER, UTILITY, ARTIFICIAL, ORE, PORTAL }
+    public enum StorageType { CHEST, TRAPPED_CHEST, BARREL, SHULKER, ENDER_CHEST, MACHINE, NONE }
+    public record Highlight(BlockPos pos, Kind kind, StorageType storageType) {
+        public Highlight(BlockPos pos, Kind kind) { this(pos,kind,StorageType.NONE); }
+    }
     public record Result(int x, int z, String classification, double clusterScore,
                          int spawners, int containers, List<Highlight> highlights, long updatedTick) { }
     public record Stats(int indexed, int queued, int visible, int containers, int spawners, int strongest) { }
-    private static final int MAX_WORLDS=16, MAX_CHUNKS=512, MAX_QUEUE=128, MAX_PER_CHUNK=64, MAX_RENDER=192;
+    private static final int MAX_WORLDS=16, MAX_CHUNKS=512, MAX_QUEUE=128, MAX_PER_CHUNK=96, MAX_RENDER=192;
     private static final List<int[]> SWEEP = makeSweep(7);
     private final LinkedHashMap<String, WorldIndex> worlds = new LinkedHashMap<>(16,0.75f,true);
     private final Deque<LevelChunk> queue = new ArrayDeque<>();
@@ -122,7 +125,7 @@ public final class ChunkScanner {
             for(int processed=0;processed<96 && blockEntities.hasNext() && System.nanoTime()<deadline;processed++) {
                 var entry=blockEntities.next(); BlockState state=entry.getValue().getBlockState();
                 if(state.is(Blocks.SPAWNER)) { spawners++; mark(entry.getKey(),Kind.SPAWNER); }
-                else if(isStorage(state)) { containers++; mark(entry.getKey(),Kind.STORAGE); customBoost+=weights.getOrDefault("minecraft:chest",1.5)-1.5; }
+                else if(isStorage(state) && foundPositions.add(entry.getKey().asLong())) { containers++; mark(entry.getKey(),Kind.STORAGE,storageType(state)); customBoost+=weights.getOrDefault("minecraft:chest",1.5)-1.5; }
             }
         } catch(ConcurrentModificationException changed) { current=null; blockEntities=Collections.emptyIterator(); return; }
         if(blockEntities.hasNext()) return; // never process an unbounded BE map on one tick
@@ -136,9 +139,11 @@ public final class ChunkScanner {
             if(interesting(state)) {
                 BlockPos pos=new BlockPos((cx<<4)+x,mc.level.getMinY()+(section<<4)+y,(cz<<4)+z);
                 if(state.is(Blocks.SPAWNER)) { if(foundPositions.add(pos.asLong())) { spawners++; mark(pos,Kind.SPAWNER); } }
-                else if(isStorage(state)) { if(foundPositions.add(pos.asLong())) { containers++; mark(pos,Kind.STORAGE); customBoost+=weights.getOrDefault("minecraft:chest",1.5)-1.5; } }
+                else if(isStorage(state)) { if(foundPositions.add(pos.asLong())) { containers++; mark(pos,Kind.STORAGE,storageType(state)); customBoost+=weights.getOrDefault("minecraft:chest",1.5)-1.5; } }
                 else if(isUtility(state)) { utility++; mark(pos,Kind.UTILITY); boost(state); }
+                else if(state.is(Blocks.NETHER_PORTAL) || state.is(Blocks.END_PORTAL_FRAME)) { artificial++; mark(pos,Kind.PORTAL); }
                 else if(isArtificial(state)) { artificial++; mark(pos,Kind.ARTIFICIAL); boost(state); }
+                else if(isOre(state) && found.size()<MAX_PER_CHUNK-24) mark(pos,Kind.ORE);
             }
             remaining--;
             if(index==4096) { index=0; section++; }
@@ -161,9 +166,10 @@ public final class ChunkScanner {
         if(chunk==current || queue.size()>=MAX_QUEUE || !queued.add(id)) return;
         queue.addLast(chunk);
     }
-    private void mark(BlockPos pos,Kind kind) {
+    private void mark(BlockPos pos,Kind kind) { mark(pos,kind,StorageType.NONE); }
+    private void mark(BlockPos pos,Kind kind,StorageType storageType) {
         foundPositions.add(pos.asLong());
-        if(found.size()<MAX_PER_CHUNK) found.add(new Highlight(pos,kind));
+        if(found.size()<MAX_PER_CHUNK) found.add(new Highlight(pos,kind,storageType));
     }
     private void boost(BlockState state) {
         // Avoid allocating registry names for the common stone/dirt/air path.
@@ -186,16 +192,29 @@ public final class ChunkScanner {
         }
         visible=List.copyOf(list);
     }
+    private static StorageType storageType(BlockState s) {
+        if(s.is(Blocks.TRAPPED_CHEST)) return StorageType.TRAPPED_CHEST;
+        if(s.is(Blocks.CHEST)) return StorageType.CHEST;
+        if(s.is(Blocks.BARREL)) return StorageType.BARREL;
+        if(s.getBlock() instanceof ShulkerBoxBlock) return StorageType.SHULKER;
+        if(s.is(Blocks.ENDER_CHEST)) return StorageType.ENDER_CHEST;
+        return StorageType.MACHINE;
+    }
+    private static boolean isOre(BlockState s) {
+        return s.is(Blocks.DIAMOND_ORE) || s.is(Blocks.DEEPSLATE_DIAMOND_ORE)
+            || s.is(Blocks.ANCIENT_DEBRIS) || s.is(Blocks.EMERALD_ORE)
+            || s.is(Blocks.DEEPSLATE_EMERALD_ORE);
+    }
     private static boolean isStorage(BlockState s) { return s.is(Blocks.CHEST) || s.is(Blocks.TRAPPED_CHEST) || s.is(Blocks.BARREL)
         || s.is(Blocks.ENDER_CHEST) || s.is(Blocks.HOPPER) || s.is(Blocks.DISPENSER) || s.is(Blocks.DROPPER)
         || s.is(Blocks.FURNACE) || s.is(Blocks.BLAST_FURNACE) || s.is(Blocks.SMOKER) || s.getBlock() instanceof ShulkerBoxBlock; }
     private static boolean isUtility(BlockState s) { return s.is(Blocks.CRAFTING_TABLE) || s.is(Blocks.BEACON)
         || s.is(Blocks.ENCHANTING_TABLE) || s.is(Blocks.RESPAWN_ANCHOR) || s.is(Blocks.ANVIL)
         || s.is(Blocks.BREWING_STAND); }
-    private static boolean isArtificial(BlockState s) { return s.is(Blocks.OBSIDIAN) || s.is(Blocks.NETHER_PORTAL)
+    private static boolean isArtificial(BlockState s) { return s.is(Blocks.OBSIDIAN) 
         || s.is(Blocks.GLOWSTONE) || s.is(Blocks.LADDER) || s.is(Blocks.COBBLESTONE)
         || s.is(Blocks.OAK_PLANKS) || s.is(Blocks.GLASS); }
-    private static boolean interesting(BlockState s) { return s.is(Blocks.SPAWNER) || isStorage(s) || isUtility(s) || isArtificial(s); }
+    private static boolean interesting(BlockState s) { return s.is(Blocks.SPAWNER) || isStorage(s) || isUtility(s) || isArtificial(s) || isOre(s) || s.is(Blocks.NETHER_PORTAL) || s.is(Blocks.END_PORTAL_FRAME); }
     private static long key(int x,int z) { return ((long)x<<32)|(z&0xffffffffL); }
     private static List<int[]> makeSweep(int radius) {
         List<int[]> offsets=new ArrayList<>();
