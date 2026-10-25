@@ -2,9 +2,11 @@
 
 Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`, package `com.lauua.lauuacheats`, version `1.1.0`. Based on the official [Fabric example mod's 26.2 branch](https://github.com/FabricMC/fabric-example-mod/tree/26.2). Java **25**, Fabric Loader **0.20.1**, Fabric API **0.161.0+26.2**, Gradle wrapper **9.8.2**, Loom **1.19-SNAPSHOT**.
 
+**Download:** Use the [experimental v1.1.0 release](https://github.com/lawandtariq99-blip/lauua/releases/tag/lauuacheats-v1.1.0-experimental), not the old v1.0.0 artifact. The JAR is built after the CI client game test passes. Only install it in a test profile first.
+
 **Build:** Install JDK 25, put `java` on PATH / set `JAVA_HOME`, then run `./gradlew build` from this directory. Find the distributable in `build/libs/`; install it alongside Fabric API in a 26.2 Fabric client. Only the client entrypoint is registered; never install on a dedicated server.
 
-**Build status:** This sandbox has no Java executable and cannot reach the Gradle/Fabric Maven hosts; its local `./gradlew build` checks stop with `JAVA_HOME is not set`. Java 25 CI now runs both `./gradlew build` (including scoring unit tests) and `runClientGameTest` in a virtual display. This exercises a disposable world, storage/spawner markers, ranked cluster scoring, live block updates, opening the GUI and clicking a module toggle. It does **not** verify every module or every multiplayer server; test in a disposable world before relying on it.
+**Build status:** This sandbox has no Java executable and cannot reach the Gradle/Fabric Maven hosts; its local `./gradlew build` checks stop with `JAVA_HOME is not set`. [Java 25 CI](https://github.com/lawandtariq99-blip/lauua/actions/runs/40220949423) now runs both `./gradlew build` (including scoring unit tests) and `runClientGameTest` in a virtual display. This exercises a disposable world, storage/spawner markers, ranked cluster scoring, live block updates, opening the GUI and clicking a module toggle. It does **not** verify every module or every multiplayer server; test in a disposable world before relying on it.
 
 **Mappings choice:** Yarn has no 26.2 branch (its newest published branch at creation was 1.21.11). The official 26.2 example uses Mojang's official mappings by default; this project follows it instead of inventing an incompatible Yarn version. This is a deliberate departure from the request.
 
@@ -12,7 +14,7 @@ Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`
 
 | Key | Action |
 |---|---|
-| Right Shift | Open ClickGUI (left-click module to toggle/select) |
+| Right Shift | Open dashboard (click card to inspect; click switch to toggle; scroll for more) |
 | End | Panic: disable all modules and clear queued actions |
 | Insert | Log current coordinate |
 | F9 | Start the anchor recipe macro (does not select inventory items automatically; slots 0/1/2) |

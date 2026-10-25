@@ -69,6 +69,10 @@ jobs:
           print('::error title=Client gametest diagnostics::'+excerpt.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
           PYLOG
           find . -path '*/logs/latest.log' -maxdepth 6 -print -exec tail -n 90 {} \; 2>/dev/null || true
+      - name: collect tested GUI screenshot
+        run: |
+          shot=$(find . -type f -name 'lauua-explorer-26_2.png' -print -quit)
+          if [ -n "$shot" ]; then cp "$shot" build/libs/lauua-gui-preview.png; fi
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -77,7 +81,7 @@ jobs:
 
   publish-preview:
     # Direct JAR alternative when Chrome blocks the Actions artifact ZIP.
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/arena/f86872cf-lauua'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f86872cf-lauua'
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -97,8 +101,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create lauuacheats-v1.1.0-experimental \
-            artifact/lauuacheats-1.1.0.jar artifact/SHA256SUMS \
+          assets=(artifact/lauuacheats-1.1.0.jar artifact/SHA256SUMS)
+          if [ -s artifact/lauua-gui-preview.png ]; then assets+=(artifact/lauua-gui-preview.png); fi
+          gh release create lauuacheats-v1.1.0-experimental "${assets[@]}" \
             --repo "${{ github.repository }}" --target "$GITHUB_SHA" --prerelease \
             --title "Lauua Cheats 1.1.0 (experimental)" \
-            --notes "Minecraft 26.2 client-only Fabric mod. Built with Java 25 by GitHub Actions from this release's source commit. NOT play-tested; inspect the source and verify SHA256SUMS before using. This release does not contain a sources JAR."
+            --notes "Minecraft 26.2 client-only Fabric mod. Built with Java 25 by GitHub Actions from this release's source commit. CI client gametest covers chest/spawner scan, live updates, GUI drawing and clicking in a disposable singleplayer world. Multiplayer and other modules are NOT fully tested; inspect the source and verify SHA256SUMS before using."
