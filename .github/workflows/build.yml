@@ -54,7 +54,18 @@ jobs:
           done
       - name: run client game tests in virtual display
         run: |
-          timeout 420s xvfb-run -a ./gradlew runClientGameTest --no-configuration-cache
+          set -o pipefail
+          timeout 420s xvfb-run -a ./gradlew runClientGameTest --no-configuration-cache 2>&1 | tee game-test-output.txt
+      - name: summarize client test failure
+        if: failure()
+        run: |
+          python3 - <<'PYLOG'
+          from pathlib import Path
+          text=Path('game-test-output.txt').read_text(errors='replace') if Path('game-test-output.txt').exists() else 'no client test log'
+          lines=text.splitlines()
+          print('::error title=Client gametest diagnostics::'+ '\n'.join(lines[-90:]).replace('%','%25').replace('\r','%0D').replace('\n','%0A')[:15000])
+          PYLOG
+          find . -path '*/logs/latest.log' -maxdepth 6 -print -exec tail -n 90 {} \; 2>/dev/null || true
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
