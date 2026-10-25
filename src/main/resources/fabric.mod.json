@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "lauuacheats",
+  "version": "${version}",
+  "name": "Lauua Cheats",
+  "description": "Client-side utility modules for Minecraft 26.2.",
+  "authors": ["Lauua"],
+  "license": "CC0-1.0",
+  "icon": "assets/lauuacheats/icon.png",
+  "environment": "client",
+  "entrypoints": { "client": ["com.lauua.lauuacheats.LauuaClient"] },
+  "mixins": [{"config": "lauuacheats.client.mixins.json", "environment": "client"}],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
