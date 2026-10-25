@@ -43,6 +43,15 @@ jobs:
           details=details.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
           print('::error title=Compiler details::'+details)
           PYLOG
+          for jar in $(find .gradle "$HOME/.gradle/caches" -name '*.jar' -size +8M 2>/dev/null); do
+            if unzip -Z1 "$jar" 2>/dev/null | grep -q '^net/minecraft/client/multiplayer/MultiPlayerGameMode.class$'; then
+              echo "::notice title=Game mode class::${jar}"
+              javap -classpath "$jar" net.minecraft.client.multiplayer.MultiPlayerGameMode | grep -iE 'click|inventory|container|slot|swap' | while read -r method; do
+                echo "::notice title=Game mode method::$method"
+              done
+              break
+            fi
+          done
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
