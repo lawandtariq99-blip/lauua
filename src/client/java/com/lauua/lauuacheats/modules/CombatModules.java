@@ -16,6 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.phys.*;
 import java.util.*;
 
@@ -135,9 +136,11 @@ public final class CombatModules {
             Minecraft mc=Minecraft.getInstance(); if(mc.player==null || mc.level==null || mc.level.dimension()==Level.NETHER) return;
             if(!(mc.hitResult instanceof BlockHitResult hit) || !mc.level.getBlockState(hit.getBlockPos()).is(Blocks.RESPAWN_ANCHOR)) return;
             if(mc.player.distanceToSqr(Vec3.atCenterOf(hit.getBlockPos()))>9) return;
-            if(mc.player.getMainHandItem().is(Items.GLOWSTONE))
+            int charge=mc.level.getBlockState(hit.getBlockPos()).getValue(RespawnAnchorBlock.CHARGE);
+            if(mc.player.getMainHandItem().is(Items.GLOWSTONE) && charge<RespawnAnchorBlock.MAX_CHARGES)
                 rotations.enqueue(RotationManager.Type.USE,mc.player.getYRot(),mc.player.getXRot(),()->mc.gameMode.useItemOn(mc.player,InteractionHand.MAIN_HAND,hit));
-            else if(mc.player.getHealth()>16 || mc.player.getOffhandItem().is(Items.TOTEM_OF_UNDYING))
+            else if(charge>0 && !mc.player.getMainHandItem().is(Items.GLOWSTONE)
+                && (mc.player.getHealth()>16 || mc.player.getOffhandItem().is(Items.TOTEM_OF_UNDYING)))
                 rotations.enqueue(RotationManager.Type.USE,mc.player.getYRot(),mc.player.getXRot(),()->mc.gameMode.useItemOn(mc.player,InteractionHand.MAIN_HAND,hit));
         }
     }

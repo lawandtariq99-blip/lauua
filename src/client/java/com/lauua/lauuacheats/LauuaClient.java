@@ -78,7 +78,7 @@ public final class LauuaClient implements ClientModInitializer {
             switch(args[0].toLowerCase(Locale.ROOT)) {
                 case "gui" -> mc.gui.setScreen(new ClickGui(modules,hud));
                 case "panic" -> { for(Module m:modules.all()) m.setEnabled(false); rotations.clear(); macros.abort(); reply("Modules disabled"); }
-                case "toggle" -> { if(args.length<2) throw new IllegalArgumentException("toggle <module>"); Module m=modules.find(args[1]).orElseThrow(); m.toggle(); reply(m.name+" " + (m.enabled()?"ON":"OFF")); }
+                case "toggle" -> { if(args.length<2) throw new IllegalArgumentException("toggle <module>"); Module m=modules.find(input.substring("toggle".length()).trim()).orElseThrow(); m.toggle(); reply(m.name+" " + (m.enabled()?"ON":"OFF")); }
                 case "save" -> { profiles.save(args.length>1?args[1]:"default"); reply("Profile saved"); }
                 case "load" -> { profiles.load(args.length>1?args[1]:"default"); reply("Profile loaded"); }
                 case "macro" -> { if(args.length<2) throw new IllegalArgumentException("macro <name>"); macros.start(args[1]); reply("Macro started"); }

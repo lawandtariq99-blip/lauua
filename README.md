@@ -4,7 +4,7 @@ Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`
 
 **Build:** Install JDK 25, put `java` on PATH / set `JAVA_HOME`, then run `./gradlew build` from this directory. Find the distributable in `build/libs/`; install it alongside Fabric API in a 26.2 Fabric client. Only the client entrypoint is registered; never install on a dedicated server.
 
-**Build status:** This sandbox has no Java executable and cannot reach the Gradle/Fabric Maven hosts; its local `./gradlew build` checks stop with `JAVA_HOME is not set`. A [Java 25 GitHub Actions build](https://github.com/lawandtariq99-blip/lauua/actions/runs/40191661711) passed for the stage-0–7 source. Later additions must also pass CI. **Compilation is not a runtime test**: verify the mixins and gameplay in a test world before use.
+**Build status:** This sandbox has no Java executable and cannot reach the Gradle/Fabric Maven hosts; its local `./gradlew build` checks stop with `JAVA_HOME is not set`. A [Java 25 GitHub Actions build](https://github.com/lawandtariq99-blip/lauua/actions/runs/40191771937) passed for the project including five optional stage-8 modules. **Compilation is not a runtime test**: verify the mixins and gameplay in a test world before use.
 
 **Mappings choice:** Yarn has no 26.2 branch (its newest published branch at creation was 1.21.11). The official 26.2 example uses Mojang's official mappings by default; this project follows it instead of inventing an incompatible Yarn version. This is a deliberate departure from the request.
 
@@ -19,7 +19,7 @@ Client-only Fabric mod project for **Minecraft Java 26.2**, mod ID `lauuacheats`
 | Unbound | Module keybinds default to -1; set via profile JSON |
 | Right click settings row | Reset setting to default |
 
-Chat messages beginning `.lauua` are intercepted client-side and not sent to the server. Commands: `.lauua gui`, `.lauua panic`, `.lauua toggle <module>`, `.lauua save [profile]`, `.lauua load [profile]`, `.lauua macro anchor`, `.lauua waypoint <name>`, `.lauua export`, `.lauua scan`, `.lauua weight minecraft:chest 7`, `.lauua hud Coordinates 20,30`. For module names containing spaces, profile JSON/GUI is easier than the `toggle` command. Profiles are one JSON file each under `config/lauuacheats/profiles/`; coordinates and exports are under `config/lauuacheats/waypoints/`. All lists and queues are bounded. Settings change at runtime.
+Chat messages beginning `.lauua` are intercepted client-side and not sent to the server. Commands: `.lauua gui`, `.lauua panic`, `.lauua toggle <module>`, `.lauua save [profile]`, `.lauua load [profile]`, `.lauua macro anchor`, `.lauua waypoint <name>`, `.lauua export`, `.lauua scan`, `.lauua weight minecraft:chest 7`, `.lauua hud Coordinates 20,30`. Module names with spaces work with `toggle` (for example `.lauua toggle FPS HUD`). Profiles are one JSON file each under `config/lauuacheats/profiles/`; coordinates and exports are under `config/lauuacheats/waypoints/`. All lists and queues are bounded. Settings change at runtime.
 
 ## Modules
 
@@ -64,7 +64,7 @@ Edit the sign and inspect what is sent/retained; expected raw key is `key.lauuac
 
 ### Scanner scope and safety
 
-An exact palette/packed-storage comparator is provided for use with a trusted baseline, but no vanilla worldgen baseline generator is implemented. The scanner reads at most 256 block states per client tick and retains at most 128 results per world, 16 world keys, and bounded logger entries. It drops work on disconnect/dimension change/chunk unload. A true fresh-versus-modified determination would require the **server seed, generator settings, biome and exact worldgen version** to create a vanilla reference and compare *ordered raw palette entries plus packed bit-storage*. None of these are available for most remote servers. This prototype therefore only ranks unusual block distributions and explicitly does not assert fresh generation. The Xaero format is an approximation; check it with your Xaero version before importing.
+A canonical repacked-palette/bit-storage comparator is provided for use with a trusted baseline. It does not expose the *original raw in-memory palette ordering*, and no vanilla worldgen baseline generator is implemented. The scanner reads at most 256 block states per client tick and retains at most 128 results per world, 16 world keys, and bounded logger entries. It drops work on disconnect/dimension change/chunk unload. A true fresh-versus-modified determination would require the **server seed, generator settings, biome and exact worldgen version** to create a vanilla reference and compare *ordered raw palette entries plus packed bit-storage*. None of these are available for most remote servers. This prototype therefore only ranks unusual block distributions and explicitly does not assert fresh generation. The Xaero format is an approximation; check it with your Xaero version before importing.
 
 ### Not implemented
 

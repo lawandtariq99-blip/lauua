@@ -7,7 +7,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.Strategy;
 import java.util.*;
 
-/** Exact section comparison utility; the caller must supply a TRUSTED vanilla baseline. */
+/** Canonical packed-section comparison utility; callers must supply a trusted vanilla baseline. */
 public final class PaletteComparator {
     private PaletteComparator() { }
     private static final Strategy<BlockState> STRATEGY=Strategy.createForBlockStates(Block.BLOCK_STATE_REGISTRY);
@@ -16,10 +16,11 @@ public final class PaletteComparator {
         @Override public long[] packedStorage() { return packedStorage.clone(); }
     }
     public static Snapshot snapshot(LevelChunkSection section) {
-        // pack() reconstructs a canonical ordered palette from the section's indexed states,
-        // and returns the exact bit-packed storage for those indices. Compare BOTH: same
-        // set of blocks in a different order changes the palette indices and bit array.
-        // Bound callers to one section per tick; don't pack all sections on the render thread.
+        // pack() REENCODES states into a canonical ordered palette and packed bit-storage.
+        // Compare BOTH the palette and its indices: equal block sets can have different
+        // layouts. This is NOT a dump of the section's original in-memory/raw palette order;
+        // original ordering is lost when pack() repalettizes. It cannot identify vanilla
+        // worldgen without a trusted same-seed baseline. Bound use to one section per tick.
         var packed=((SectionStatesAccessor)section).lauuacheats$states().pack(STRATEGY);
         return new Snapshot(packed.paletteEntries(),packed.bitsPerEntry(),packed.storage().map(s->s.toArray()).orElseGet(()->new long[0]));
     }
