@@ -13,6 +13,7 @@ import org.lwjgl.glfw.GLFW;
 /** A virtual-display integration test: world join, basefinding, ESP index and GUI opening. */
 public final class ExplorerGameTest implements FabricClientGameTest {
     @Override public void runTest(ClientGameTestContext context) {
+        context.getInput().resizeWindow(1600,900); // Typical desktop size; default gametest window is tiny.
         try(TestSingleplayerContext world=context.worldBuilder().create()) {
             world.getServer().runCommand("/setblock 0 98 0 minecraft:stone");
             world.getServer().runCommand("/tp @a 0 99 0");
