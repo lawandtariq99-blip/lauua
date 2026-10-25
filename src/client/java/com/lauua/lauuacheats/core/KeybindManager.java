@@ -1,6 +1,7 @@
 package com.lauua.lauuacheats.core;
 
 import net.minecraft.client.Minecraft;
+import com.lauua.lauuacheats.text.mixin.GuiScreenAccessor;
 import org.lwjgl.glfw.GLFW;
 import java.util.*;
 
@@ -15,8 +16,8 @@ public final class KeybindManager {
         Set<Integer> keys = new HashSet<>(actions.keySet());
         modules.all().forEach(m -> { if (m.keybind.get() >= 0) keys.add(m.keybind.get()); });
         for (int key : keys) {
-            boolean pressed = GLFW.glfwGetKey(client.getWindow().getWindow(), key) == GLFW.GLFW_PRESS;
-            if (pressed && down.add(key) && client.screen == null) {
+            boolean pressed = GLFW.glfwGetKey(client.getWindow().handle(), key) == GLFW.GLFW_PRESS;
+            if (pressed && down.add(key) && ((GuiScreenAccessor)client.gui).lauuacheats$screen() == null) {
                 actions.getOrDefault(key, List.of()).forEach(Runnable::run);
                 modules.all().stream().filter(m -> m.keybind.get() == key).forEach(Module::toggle);
             }

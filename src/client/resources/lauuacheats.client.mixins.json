@@ -5,7 +5,8 @@
   "client": [
     "BrandPayloadMixin",
     "ComponentMixin",
-    "SectionStatesAccessor"
+    "SectionStatesAccessor",
+    "GuiScreenAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

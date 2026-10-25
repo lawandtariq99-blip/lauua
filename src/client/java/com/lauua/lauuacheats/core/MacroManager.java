@@ -30,7 +30,7 @@ public final class MacroManager {
     public void tick(Minecraft mc) {
         if (mc.player==null || mc.level==null) { abort(); return; }
         if (running==null || System.currentTimeMillis()<nextAt) return;
-        if (running.abortOnRelease() && running.key()>=0 && GLFW.glfwGetKey(mc.getWindow().getWindow(),running.key())!=GLFW.GLFW_PRESS) { abort(); return; }
+        if (running.abortOnRelease() && running.key()>=0 && GLFW.glfwGetKey(mc.getWindow().handle(),running.key())!=GLFW.GLFW_PRESS) { abort(); return; }
         Step step=running.steps().get(index++);
         execute(mc,step);
         nextAt=System.currentTimeMillis()+step.delayMs()+ (step.op()==Op.WAIT_MS?Math.max(0,step.value()):0);

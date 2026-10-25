@@ -61,12 +61,12 @@ public final class ClickGui extends Screen {
         if (s instanceof Setting.BooleanSetting b) b.set(!b.get());
         else if (s instanceof Setting.IntSlider i) i.set(i.get()+1 > i.max ? i.min : i.get()+1);
         else if (s instanceof Setting.DoubleSlider d) d.set(d.get()+0.1 > d.max ? d.min : Math.round((d.get()+0.1)*10.0)/10.0);
-        else if (s instanceof Setting.EnumSetting e) { Enum[] all=((Enum)e.get()).getDeclaringClass().getEnumConstants(); e.set(all[(e.get().ordinal()+1)%all.length]); }
+        else if (s instanceof Setting.EnumSetting e) { Enum[] all=(Enum[])((Enum)e.get()).getDeclaringClass().getEnumConstants(); e.set(all[(e.get().ordinal()+1)%all.length]); }
         // Strings, lists, colors and keybinds are editable in the JSON profile; clicking does not destroy them.
     }
     @Override public void tick() {
         super.tick();
-        Minecraft mc=Minecraft.getInstance(); long window=mc.getWindow().getWindow();
+        Minecraft mc=Minecraft.getInstance(); long window=mc.getWindow().handle();
         double[] x={0}, y={0}; GLFW.glfwGetCursorPos(window,x,y);
         int mx=(int)(x[0]*width/mc.getWindow().getScreenWidth()), my=(int)(y[0]*height/mc.getWindow().getScreenHeight());
         boolean left=GLFW.glfwGetMouseButton(window,GLFW.GLFW_MOUSE_BUTTON_LEFT)==GLFW.GLFW_PRESS;
